@@ -1,0 +1,19 @@
+{
+  "name": "docreaderbot",
+  "version": "1.0.0",
+  "description": "Telegram bot for Tachycardia",
+  "main": "./src/bot.js",
+  "type": "commonjs",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node ./src/bot.js",
+    "install": "",
+    "build": ""
+  },
+  "author": "M0sT4fa",
+  "license": "MIT",
+  "dependencies": {
+    "docreaderbot": "file:",
+    "node-telegram-bot-api": "^0.66.0"
+  }
+}
