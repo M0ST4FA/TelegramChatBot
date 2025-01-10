@@ -1,10 +1,7 @@
 const { readFileSync } = require('node:fs')
 
-const config = readFileSync('./botconfig.json', 'utf-8');
-const jsonConfig = JSON.parse(config);
-
-exports.TOKEN = jsonConfig.token;
-exports.ADMIN_CHAT_ID = jsonConfig.adminChatId; // Replace with the chat ID you want to forward messages to
+exports.TOKEN = process.env.BOT_TOKEN;
+exports.ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID; // Replace with the chat ID you want to forward messages to
 exports.COMMANDS_MESSAGE = `
       ✳️ Commands supported by the bot:
       🤖 /commands Shows this message.

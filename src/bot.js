@@ -80,7 +80,7 @@ bot.on('edited_message_caption', async (msg) => {
     return;
 
   // If this is not a message we've sent to some user
-  if (!adminRepliesMessageMapA2U.has(msgId))
+  if (!adminRepliesMessagesA2U.has(msgId))
     return;
 
   if (msg.caption)

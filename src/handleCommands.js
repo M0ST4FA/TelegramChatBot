@@ -56,7 +56,14 @@ exports.handleUserCommands = function (msg) { // msg must be a reply to another 
 
     const replyToMessage = msg.reply_to_message;
     const msgId = replyToMessage.message_id;
-    const { chatId, messageId } = adminRepliesMessagesA2U.get(msgId);
+    const replyDetails = adminRepliesMessagesA2U.get(msgId);
+
+    if (!replyDetails) {
+      bot.sendMessage(ADMIN_CHAT_ID, 'Message not present in bot data structures.', { reply_to_message_id: msgId });
+      return false;
+    }
+
+    const { chatId, messageId } = replyDetails;
 
     bot.deleteMessage(chatId, messageId);
     bot.sendMessage(ADMIN_CHAT_ID, 'Deleted message.', { reply_to_message_id: msgId });

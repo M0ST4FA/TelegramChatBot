@@ -2,3 +2,4 @@ node_modules
 .vscode
 botconfig.json
 .vercel
+*.env
