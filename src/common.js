@@ -15,24 +15,36 @@ exports.setUserMessagesU2A = function (chatId, userMsgId, adminMsgId) {
     userMap.set(userMsgId, adminMsgId);
 
 }
+
+exports.getFullNameFromUser = function (user) {
+  const firstName = user.first_name || '';
+  const lastName = user.last_name || '';
+
+  fullName = `${firstName} ${lastName}`;
+
+  if (fullName == 'عمر عبدالعليم') {
+    fullName = 'عومر عبعليم آل دحيح'
+  }
+
+  return fullName;
+}
+
 exports.getResponderMessage = function (msg) {
 
-  let firstName = '';
-  let lastName = '';
-  let fullName = '';
   let responderMsg = '';
 
   if (showResponderName()) {
-    firstName = msg.from.first_name || '';
-    lastName = msg.from.last_name || '';
-    fullName = `${firstName} ${lastName}`;
-
-    if (fullName == 'عمر عبدالعليم') {
-      fullName = 'عومر عبعليم آل دحيح'
-    }
-
+    let fullName = exports.getFullNameFromUser(msg.from);
     responderMsg = `تم الرد بواسطة: ${fullName}`
   }
 
   return responderMsg;
+}
+
+exports.getSenderMessage = function (msg) {
+
+  let fullName = exports.getFullNameFromUser(msg.from);
+  const senderMsg = `تم الإرسال بواسطة: ${fullName}`
+
+  return senderMsg;
 }

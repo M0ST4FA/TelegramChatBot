@@ -8,4 +8,5 @@ exports.COMMANDS_MESSAGE = `
       🤖 /print Prints debugging information for developers.
       🤖 /toggleResponderName Toggles showing the name of the responder from the admin chat to the user.
       🤖 /toggleReplies Toggles showing the message that admins have replied to to the user.
+      🤖 /toggleForwardMode Toggles forwarding user messages or sending them without forwarding.
       `

@@ -1,6 +1,6 @@
 const { ADMIN_CHAT_ID, COMMANDS_MESSAGE } = require('./constants.js');
 const { bot, forwardedMessagesA2U, adminRepliesMessagesA2U, userMessagesU2A } = require('./common.js');
-const { toggleResponderName, toggleRepliedToMessage, showResponderName, showRepliedToMessage } = require('./settings.js');
+const { toggleResponderName, toggleRepliedToMessage, showResponderName, showRepliedToMessage, toggleForwardMode, forwardMode } = require('./settings.js');
 
 exports.handleCommands = function handleCommands(msg) {
   const msgText = msg.text || '';
@@ -30,6 +30,9 @@ exports.handleCommands = function handleCommands(msg) {
   } else if (msgText == '/toggleReplies') {
     toggleRepliedToMessage();
     bot.sendMessage(ADMIN_CHAT_ID, showRepliedToMessage() ? "The message that was replied to will be quoted in the response." : "The message that was replied to will NOT be quoted in the response.");
+  } else if (msgText == '/toggleForwardMode') {
+    toggleForwardMode();
+    bot.sendMessage(ADMIN_CHAT_ID, forwardMode() ? "User messages sent to the bot will be simply forwarded." : "User messages sent to the bot will NOT be forwarded. Instead, they will be sent.");
   }
   else {
     bot.sendMessage(ADMIN_CHAT_ID, "Unknown command.");

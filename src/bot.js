@@ -1,8 +1,9 @@
 const { ADMIN_CHAT_ID } = require('./constants.js');
-const { bot, forwardedMessagesA2U, userMessagesU2A, adminRepliesMessagesA2U, setUserMessagesU2A } = require('./common.js');
+const { bot, forwardedMessagesA2U, userMessagesU2A, adminRepliesMessagesA2U, setUserMessagesU2A, getSenderMessage, getFullNameFromUser } = require('./common.js');
 const { handleCommands } = require('./handleCommands.js');
 const { handleReplies } = require('./handleReplies.js');
 const { editMessageText, editMessageCaption } = require('./editMessage.js');
+const { forwardMode } = require('./settings.js');
 
 // Handle incoming messages from users
 bot.on('message', async (msg) => {
@@ -15,20 +16,54 @@ bot.on('message', async (msg) => {
 
     // MESSAGES COMING FROM USER CHATS
     if (chatId != ADMIN_CHAT_ID) {
-      // Forward the user's message to the admin
-      bot.forwardMessage(ADMIN_CHAT_ID, chatId, messageId).then(adminMsg => {
-        // Store the original user message ID and chat ID
-        forwardedMessagesA2U.set(adminMsg.message_id, { chatId, messageId });
-        setUserMessagesU2A(chatId, messageId, adminMsg.message_id);
+      console.log(msg);
 
-        if (replyToMessage) {
-          const replyToUserMessageId = replyToMessage.message_id;
-          const replyToAdminMessageId = userMessagesU2A.get(chatId).get(replyToUserMessageId);
+      if (forwardMode())
+        // Forward the user's message to the admin
+        bot.forwardMessage(ADMIN_CHAT_ID, chatId, messageId).then(adminMsg => {
+          // Store the original user message ID and chat ID
+          forwardedMessagesA2U.set(adminMsg.message_id, { chatId, messageId });
+          setUserMessagesU2A(chatId, messageId, adminMsg.message_id);
 
-          bot.sendMessage(ADMIN_CHAT_ID, "The message responds to:", { reply_to_message_id: replyToAdminMessageId });
+          if (replyToMessage) {
+            const replyToUserMessageId = replyToMessage.message_id;
+            const replyToAdminMessageId = userMessagesU2A.get(chatId).get(replyToUserMessageId);
+
+            bot.sendMessage(ADMIN_CHAT_ID, "The message responds to:", { reply_to_message_id: replyToAdminMessageId });
+          }
+
+          // If the message is already forwarded from someone else
+          if (msg.forward_from) {
+            bot.sendMessage(ADMIN_CHAT_ID, `The message is forwarded from ${getFullNameFromUser(msg.forward_from)}. The original sender is ${getFullNameFromUser(msg.from)}`, { reply_to_message_id: adminMsg.message_id });
+          }
+
+        });
+      else {
+
+        if (msg.text) {
+
+          let text = msg.text || '';
+          const senderMessage = getSenderMessage(msg);
+          text += '\n' + senderMessage;
+
+          if (replyToMessage) {
+            const replyToUserMessageId = replyToMessage.message_id;
+            const replyToAdminMessageId = userMessagesU2A.get(chatId).get(replyToUserMessageId);
+
+            bot.sendMessage(ADMIN_CHAT_ID, text, { reply_to_message_id: replyToAdminMessageId, entities: [{ type: "blockquote", offset: text.indexOf(`${senderMessage}`), length: senderMessage.length }] }).then(adminMsg => {
+              forwardedMessagesA2U.set(adminMsg.message_id, { chatId, messageId });
+              setUserMessagesU2A(chatId, messageId, adminMsg.message_id);
+            });
+          } else {
+            bot.sendMessage(ADMIN_CHAT_ID, text, { entities: [{ type: "blockquote", offset: text.indexOf(`${senderMessage}`), length: senderMessage.length }] }).then(adminMsg => {
+              forwardedMessagesA2U.set(adminMsg.message_id, { chatId, messageId });
+              setUserMessagesU2A(chatId, messageId, adminMsg.message_id);
+            });
+          }
         }
 
-      });
+      }
+
 
     } else { // MESSAGES COMING FROM THE ADMIN CHAT
 
@@ -52,8 +87,6 @@ bot.on('edited_message', async (msg) => {
   const msgId = msg.message_id;
   const replyToMessage = msg.reply_to_message;
 
-  console.log(msg);
-
   // If this is not a message that replies to another message
   if (!replyToMessage)
     return;
@@ -72,8 +105,6 @@ bot.on('edited_message_caption', async (msg) => {
 
   const msgId = msg.message_id;
   const replyToMessage = msg.reply_to_message;
-
-  console.log(msg);
 
   // If this is not a message that replies to another message
   if (!replyToMessage)

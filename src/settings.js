@@ -1,6 +1,7 @@
 
 showResponderName = true;
 showRepliedToMessage = true;
+forwardMode = false;
 
 exports.showResponderName = function () {
   return showResponderName;
@@ -16,4 +17,12 @@ exports.toggleResponderName = function () {
 
 exports.toggleRepliedToMessage = function () {
   showRepliedToMessage = !showRepliedToMessage;
+}
+
+exports.forwardMode = function () {
+  return forwardMode;
+}
+
+exports.toggleForwardMode = function () {
+  forwardMode = !forwardMode;
 }
