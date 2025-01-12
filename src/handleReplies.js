@@ -1,7 +1,7 @@
-const { bot, forwardedMessagesA2U: forwardedMessageMap, adminRepliesMessagesA2U: userMessageMap, getResponderMessage, userMessagesU2A, setUserMessagesU2A } = require('./common.js');
+const { bot, forwardedMessagesA2U, adminRepliesMessagesA2U, getResponderMessage, userMessagesU2A, setUserMessagesU2A, getFullNameFromUser, getUserNameFromUser, getSenderMessage } = require('./common.js');
 const { ADMIN_CHAT_ID } = require('./constants.js');
-const { handleUserCommands } = require('./handleCommands.js');
-const { showResponderName, showRepliedToMessage } = require('./settings.js');
+const { handleAdminChatReplyCommands } = require('./handleCommands.js');
+const { showResponderName, showRepliedToMessage, forwardMode, privateMode } = require('./settings.js');
 
 exports.handleReplies = async function (msg) {
 
@@ -12,17 +12,17 @@ exports.handleReplies = async function (msg) {
     return false;
 
   // Handle potential commands first
-  if (handleUserCommands(msg))
+  if (handleAdminChatReplyCommands(msg))
     return true;
 
   // Use reply_to_message_id to get the original message ID
   const originalMessageId = replyToMessage.message_id;
 
-  if (!forwardedMessageMap.has(originalMessageId))
+  if (!forwardedMessagesA2U.has(originalMessageId))
     return false;
 
   // Find the original chat ID using the map
-  const { chatId: targetChatId, messageId: targetMessageId } = forwardedMessageMap.get(originalMessageId);
+  const { chatId: targetChatId, messageId: targetMessageId } = forwardedMessagesA2U.get(originalMessageId);
 
   if (!targetChatId)
     return false;
@@ -68,10 +68,88 @@ exports.handleReplies = async function (msg) {
       userSentMsg = documentMsg;
     }
 
-    userMessageMap.set(msg.message_id, { chatId: targetChatId, messageId: userSentMsg.message_id });
+    adminRepliesMessagesA2U.set(msg.message_id, { chatId: targetChatId, messageId: userSentMsg.message_id });
     setUserMessagesU2A(targetChatId, userSentMsg.message_id, msg.message_id)
 
   }
 
   return true;
+}
+
+exports.sendUserMessage = async function (msg) {
+
+  const chatId = msg.chat.id;
+  const messageId = msg.message_id;
+  const replyToMessage = msg.reply_to_message;
+
+  if (forwardMode() && !privateMode(msg.from))
+    // Forward the user's message to the admin
+    bot.forwardMessage(ADMIN_CHAT_ID, chatId, messageId).then(adminMsg => {
+      // Store the original user message ID and chat ID
+      forwardedMessagesA2U.set(adminMsg.message_id, { chatId, messageId });
+      setUserMessagesU2A(chatId, messageId, adminMsg.message_id);
+
+      if (replyToMessage) {
+        const replyToUserMessageId = replyToMessage.message_id;
+        const replyToAdminMessageId = userMessagesU2A.get(chatId).get(replyToUserMessageId);
+
+        bot.sendMessage(ADMIN_CHAT_ID, "The message responds to:", { reply_to_message_id: replyToAdminMessageId });
+      }
+
+      // If the message is already forwarded from someone else
+      if (msg.forward_from) {
+
+        bot.sendMessage(ADMIN_CHAT_ID, `The message is forwarded from ${getFullNameFromUser(msg.forward_from)}. The original sender is ${getFullNameFromUser(msg.from)}`, { reply_to_message_id: adminMsg.message_id });
+      }
+
+    });
+  else {
+
+    if (msg.text) {
+
+      let text = msg.text || '';
+      let senderMessage = '';
+      let username;
+
+      if (!privateMode(msg.from)) {
+        senderMessage = getSenderMessage(msg);
+        text += '\n' + senderMessage;
+        username = getUserNameFromUser(msg.from);
+      }
+
+      if (replyToMessage) {
+        const replyToUserMessageId = replyToMessage.message_id;
+        const replyToAdminMessageId = userMessagesU2A.get(chatId).get(replyToUserMessageId);
+
+        const options = {
+          reply_to_message_id: replyToAdminMessageId,
+          entities: privateMode(msg.from) ? [] : [
+            { type: "blockquote", offset: text.indexOf(`${senderMessage}`), length: senderMessage.length },
+            { type: "mention", offset: text.indexOf(username), length: username.length }
+          ]
+        }
+
+        bot.sendMessage(ADMIN_CHAT_ID, text, options).then(adminMsg => {
+          forwardedMessagesA2U.set(adminMsg.message_id, { chatId, messageId });
+          setUserMessagesU2A(chatId, messageId, adminMsg.message_id);
+        });
+      }
+      else {
+
+        const options = {
+          entities: privateMode(msg.from) ? [] : [
+            { type: "blockquote", offset: text.indexOf(`${senderMessage}`), length: senderMessage.length },
+            { type: "mention", offset: text.indexOf(username), length: username.length }
+          ]
+        }
+
+        bot.sendMessage(ADMIN_CHAT_ID, text, options).then(adminMsg => {
+          forwardedMessagesA2U.set(adminMsg.message_id, { chatId, messageId });
+          setUserMessagesU2A(chatId, messageId, adminMsg.message_id);
+        });
+      }
+    }
+
+  }
+
 }

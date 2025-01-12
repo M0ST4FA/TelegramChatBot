@@ -40,10 +40,18 @@ exports.privateMode = function (user) {
   return privateModeUsers.has(user.id);
 }
 
-exports.banChat = function (chatId) {
+exports.addToBannedChats = function (chatId) {
   bannedChats.add(chatId);
 }
 
-exports.chatBanned = function (chatId) {
+exports.removeFromBannedChats = function (chatId) {
+  bannedChats.delete(chatId);
+}
+
+exports.isChatBanned = function (chatId) {
   return bannedChats.has(chatId);
+}
+
+exports.bannedChats = function () {
+  return bannedChats;
 }

@@ -1,8 +1,8 @@
 const { ADMIN_CHAT_ID, COMMANDS_MESSAGE, USER_COMMANDS_MESSAGE } = require('./constants.js');
-const { bot, forwardedMessagesA2U, adminRepliesMessagesA2U, userMessagesU2A, getFullNameFromUser } = require('./common.js');
-const { toggleResponderName, toggleRepliedToMessage, showResponderName, showRepliedToMessage, toggleForwardMode, forwardMode, togglePrivateMode, privateMode, banChat } = require('./settings.js');
+const { bot, forwardedMessagesA2U, adminRepliesMessagesA2U, userMessagesU2A, getFullNameFromUser, getUserNameFromUser, banChat, unbanChat } = require('./common.js');
+const { toggleResponderName, toggleRepliedToMessage, showResponderName, showRepliedToMessage, toggleForwardMode, forwardMode, togglePrivateMode, privateMode, addToBannedChats, bannedChats } = require('./settings.js');
 
-exports.handleCommands = function handleCommands(msg) {
+exports.handleAdminChatCommands = function handleCommands(msg) {
   const msgText = msg.text || '';
 
   if (!msgText)
@@ -11,7 +11,7 @@ exports.handleCommands = function handleCommands(msg) {
   if (msgText[0] != '/')
     return false;
 
-  if (msgText == '/print') {
+  if (msgText == '/log') {
     const forwardedMessages = JSON.stringify(Object.fromEntries(forwardedMessagesA2U));
     const adminReplies = JSON.stringify(Object.fromEntries(adminRepliesMessagesA2U));
     const userMessages = JSON.stringify(Object.fromEntries(userMessagesU2A));
@@ -33,6 +33,49 @@ exports.handleCommands = function handleCommands(msg) {
   } else if (msgText == '/toggleForwardMode') {
     toggleForwardMode();
     bot.sendMessage(ADMIN_CHAT_ID, forwardMode() ? "User messages sent to the bot will be simply forwarded." : "User messages sent to the bot will NOT be forwarded. Instead, they will be sent.");
+  } else if (msgText == '/bannedUsers') {
+    const bannedChatIds = bannedChats();
+
+    if (bannedChatIds.size == 0) {
+      bot.sendMessage(ADMIN_CHAT_ID, "There are no banned users.");
+      return true;
+    }
+
+    bot.sendMessage(ADMIN_CHAT_ID, "Banned users are:");
+    for (const chatId of bannedChatIds) {
+      bot.getChatMember(chatId, chatId).then(member => {
+        const username = getUserNameFromUser(member.user);
+        const fullName = getFullNameFromUser(member.user);
+        const msg = `${fullName} (${username}:${chatId})`;
+
+        bot.sendMessage(ADMIN_CHAT_ID, msg,
+          { entities: [{ type: "mention", offset: msg.indexOf(username), length: username.length }] }
+        );
+      });
+    }
+
+  } else if (msgText.startsWith('/ban')) {
+    const regexMatch = /\/ban@(\d{8,})/.exec(msgText);
+
+    if (!regexMatch) {
+      bot.sendMessage(ADMIN_CHAT_ID, 'Incorrect format of command. The correct format is: /ban@<userId>. User Id must be at least 8 digits long.');
+      return true;
+    }
+
+    const chatId = +regexMatch.at(1);
+    banChat(chatId);
+
+  } else if (msgText.startsWith('/unban')) {
+    const regexMatch = /\/unban@(\d{8,})/.exec(msgText);
+
+    if (!regexMatch) {
+      bot.sendMessage(ADMIN_CHAT_ID, 'Incorrect format of command. The correct format is: /unban@<userId>. User Id must be at least 8 digits long.');
+      return true;
+    }
+
+    const chatId = +regexMatch.at(1);
+    unbanChat(chatId);
+
   }
   else {
     bot.sendMessage(ADMIN_CHAT_ID, "Unknown command.");
@@ -42,9 +85,9 @@ exports.handleCommands = function handleCommands(msg) {
   return true;
 }
 
-exports.handleUserCommands = async function (msg) { // msg must be a reply to another message
+exports.handleAdminChatReplyCommands = function (msg) { // msg must be a reply to another message
 
-  const userCommands = ["delete", "عومر", "ban", "عومر2", "info"];
+  const userCommands = ["delete", "عومر", "ban", "عومر2", "unban", "info"];
 
   if (!msg.text)
     return false;
@@ -74,6 +117,7 @@ exports.handleUserCommands = async function (msg) { // msg must be a reply to an
 
   }
   else if (msg.text == "ban" || msg.text == "عومر2") {
+
     console.log(msg);
 
     const replyDetails = forwardedMessagesA2U.get(replyToMessageId);
@@ -84,14 +128,21 @@ exports.handleUserCommands = async function (msg) { // msg must be a reply to an
     }
 
     const { chatId } = replyDetails;
-
-    const chatMember = await bot.getChatMember(chatId, chatId);
-    const user = chatMember.user;
-    const userFullName = getFullNameFromUser(user);
-
     banChat(chatId);
-    bot.sendMessage(chatId, "You've been banned from the bot.");
-    bot.sendMessage(ADMIN_CHAT_ID, `${userFullName} has been banned from the bot.`);
+
+  } else if (msg.text == "unban") {
+
+    console.log(msg);
+
+    const replyDetails = forwardedMessagesA2U.get(replyToMessageId);
+
+    if (!replyDetails) {
+      bot.sendMessage(ADMIN_CHAT_ID, 'Message not present in bot data structures.', { reply_to_message_id: replyToMessageId });
+      return false;
+    }
+
+    const { chatId } = replyDetails;
+    unbanChat(chatId);
 
   }
   else if (msg.text == "info") {

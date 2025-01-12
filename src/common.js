@@ -1,6 +1,6 @@
-const { TOKEN } = require('./constants.js');
 const TelegramBot = require('node-telegram-bot-api');
-const { showResponderName } = require('./settings.js')
+const { ADMIN_CHAT_ID, TOKEN } = require('./constants.js');
+const { showResponderName, addToBannedChats, isChatBanned, removeFromBannedChats } = require('./settings.js')
 
 exports.bot = new TelegramBot(TOKEN, { polling: true });
 exports.forwardedMessagesA2U = new Map();
@@ -24,8 +24,7 @@ exports.getFullNameFromUser = function (user) {
   const firstName = user.first_name || '';
   const lastName = user.last_name || '';
 
-  let fullName = `${firstName} ${lastName}`;
-  fullName = fullName.trimEnd();
+  let fullName = `${firstName} ${lastName}`.trim();
 
   if (fullName == 'عمر عبدالعليم') {
     fullName = 'عومر عبعليم آل دحيح'
@@ -40,7 +39,7 @@ exports.getResponderMessage = function (msg) {
 
   if (showResponderName()) {
     let fullName = exports.getFullNameFromUser(msg.from);
-    responderMsg = `تم الرد بواسطة: ${fullName}`
+    responderMsg = `Response written by: ${fullName}`
   }
 
   return responderMsg;
@@ -50,7 +49,41 @@ exports.getSenderMessage = function (msg) {
 
   const fullName = exports.getFullNameFromUser(msg.from);
   const username = exports.getUserNameFromUser(msg.from);
-  const senderMsg = `تم الإرسال بواسطة: ${fullName} (${username})`
+  const senderMsg = `Message sent by: ${fullName} (${username})`
 
   return senderMsg;
+}
+
+exports.banChat = async function (chatId) {
+
+  if (isChatBanned(chatId)) {
+    exports.bot.sendMessage(ADMIN_CHAT_ID, `User is already banned. To unban user, type /unban@${chatId}.`);
+    return;
+  }
+
+  const chatMember = await exports.bot.getChatMember(chatId, chatId);
+  const user = chatMember.user;
+  const username = exports.getUserNameFromUser(user);
+  const userFullName = exports.getFullNameFromUser(user);
+
+  addToBannedChats(chatId);
+  exports.bot.sendMessage(chatId, "You've been banned from the bot.");
+  exports.bot.sendMessage(ADMIN_CHAT_ID, `${userFullName} (${username}:${chatId}) has been banned from the bot.`);
+}
+
+exports.unbanChat = async function (chatId) {
+  if (!isChatBanned(chatId)) {
+    exports.bot.sendMessage(ADMIN_CHAT_ID, `User is already not banned. To ban user, type /ban@${chatId}.`);
+    return;
+  }
+
+  const chatMember = await exports.bot.getChatMember(chatId, chatId);
+  const user = chatMember.user;
+  const username = exports.getUserNameFromUser(user);
+  const userFullName = exports.getFullNameFromUser(user);
+
+  removeFromBannedChats(chatId);
+  exports.bot.sendMessage(chatId, "You're no longer banned from the bot.");
+  exports.bot.sendMessage(ADMIN_CHAT_ID, `${userFullName} (${username}:${chatId}) has been removed from the banned list.`);
+
 }
