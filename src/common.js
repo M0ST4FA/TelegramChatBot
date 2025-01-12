@@ -1,11 +1,12 @@
 const TelegramBot = require('node-telegram-bot-api');
 const { ADMIN_CHAT_ID, TOKEN } = require('./constants.js');
-const { showResponderName, addToBannedChats, isChatBanned, removeFromBannedChats } = require('./settings.js')
+const { showResponderName, addToBannedChats, isChatBanned, removeFromBannedChats, privateMode } = require('./settings.js')
 
 exports.bot = new TelegramBot(TOKEN, { polling: true });
 exports.forwardedMessagesA2U = new Map();
 exports.adminRepliesMessagesA2U = new Map();
 exports.userMessagesU2A = new Map();
+
 exports.setUserMessagesU2A = function (chatId, userMsgId, adminMsgId) {
   let userMap = exports.userMessagesU2A.get(chatId);
 
@@ -57,7 +58,7 @@ exports.getSenderMessage = function (msg) {
 exports.banChat = async function (chatId) {
 
   if (isChatBanned(chatId)) {
-    exports.bot.sendMessage(ADMIN_CHAT_ID, `User is already banned. To unban user, type /unban@${chatId}.`);
+    exports.bot.sendMessage(ADMIN_CHAT_ID, `User is already banned. To unban user, type /unban ${chatId}.`);
     return;
   }
 
@@ -68,12 +69,16 @@ exports.banChat = async function (chatId) {
 
   addToBannedChats(chatId);
   exports.bot.sendMessage(chatId, "You've been banned from the bot.");
-  exports.bot.sendMessage(ADMIN_CHAT_ID, `${userFullName} (${username}:${chatId}) has been banned from the bot.`);
+
+  if (privateMode(user))
+    exports.bot.sendMessage(ADMIN_CHAT_ID, `The user with ID ${chatId} has been banned from the bot.`);
+  else
+    exports.bot.sendMessage(ADMIN_CHAT_ID, `${userFullName} (${username}:${chatId}) has been banned from the bot.`);
 }
 
 exports.unbanChat = async function (chatId) {
   if (!isChatBanned(chatId)) {
-    exports.bot.sendMessage(ADMIN_CHAT_ID, `User is already not banned. To ban user, type /ban@${chatId}.`);
+    exports.bot.sendMessage(ADMIN_CHAT_ID, `User is already not banned. To ban user, type /ban ${chatId}.`);
     return;
   }
 
@@ -84,6 +89,10 @@ exports.unbanChat = async function (chatId) {
 
   removeFromBannedChats(chatId);
   exports.bot.sendMessage(chatId, "You're no longer banned from the bot.");
-  exports.bot.sendMessage(ADMIN_CHAT_ID, `${userFullName} (${username}:${chatId}) has been removed from the banned list.`);
+
+  if (privateMode(user))
+    exports.bot.sendMessage(ADMIN_CHAT_ID, `The user with ID ${chatId} has been removed from the banned list.`);
+  else
+    exports.bot.sendMessage(ADMIN_CHAT_ID, `${userFullName} (${username}:${chatId}) has been removed from the banned list.`);
 
 }

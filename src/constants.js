@@ -4,9 +4,12 @@ exports.COMMANDS_MESSAGE = `
       ✳️ Commands supported by the bot:
       🤖 /commands Shows this message.
       🤖 /log Prints debugging information for developers.
-      🤖 /toggleResponderName Toggles showing the name of the responder from the admin chat to the user.
+      🤖 /sign <on|off> Toggles showing the name of the responder from the admin chat to the user.
       🤖 /toggleReplies Toggles showing the message that admins have replied to to the user.
       🤖 /toggleForwardMode Toggles forwarding user messages or sending them without forwarding.
+      🤖 /bannedUsers Lists all of the banned users.
+      🤖 /ban <user ID> Bans the user with the ID <user ID> from the bot.
+      🤖 /unban <user ID> Removes the user with the ID <user ID> from the list of banned users.
       `
 exports.USER_COMMANDS_MESSAGE = `
       ✳️ Commands supported by the bot:
