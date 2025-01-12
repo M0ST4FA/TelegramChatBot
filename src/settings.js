@@ -1,34 +1,58 @@
-
-let showResponderName = true;
+const adminsWhoDoNotSign = new Set();
 let showRepliedToMessage = true;
 let forwardMode = false;
 const privateModeUsers = new Set();
 const bannedChats = new Set();
 
-exports.showResponderName = function () {
-  return showResponderName;
+// SIGNING
+exports.doNotSignMessagesOfUser = function (user) {
+  adminsWhoDoNotSign.add(user.id);
 }
 
-exports.showRepliedToMessage = function () {
+exports.signMessagesOfUser = function (user) {
+  adminsWhoDoNotSign.delete(user.id);
+}
+
+exports.doesUserSign = function (user) {
+  return !adminsWhoDoNotSign.has(user.id);
+}
+
+// REPLIES
+exports.repliedToMessagesAreShown = function () {
   return showRepliedToMessage;
+
 }
 
-exports.toggleResponderName = function () {
-  showResponderName = !showResponderName;
+exports.showRepliedToMessages = function () {
+  showRepliedToMessage = true;
+}
+
+exports.hideRepliedToMessages = function () {
+  showRepliedToMessage = false;
 }
 
 exports.toggleRepliedToMessage = function () {
   showRepliedToMessage = !showRepliedToMessage;
 }
 
+// FORWARDING
 exports.forwardMode = function () {
   return forwardMode;
+}
+
+exports.enableForwardMode = function () {
+  forwardMode = true;
+}
+
+exports.disableForwardMode = function () {
+  forwardMode = false;
 }
 
 exports.toggleForwardMode = function () {
   forwardMode = !forwardMode;
 }
 
+// PRIVATE MODE
 exports.togglePrivateMode = function (user) {
   if (privateModeUsers.has(user.id))
     privateModeUsers.delete(user.id);
@@ -36,10 +60,19 @@ exports.togglePrivateMode = function (user) {
     privateModeUsers.add(user.id);
 }
 
-exports.privateMode = function (user) {
+exports.enablePrivateMode = function (user) {
+  privateModeUsers.add(user.id);
+}
+
+exports.disablePrivateMode = function (user) {
+  privateModeUsers.delete(user.id);
+}
+
+exports.isUserPrivate = function (user) {
   return privateModeUsers.has(user.id);
 }
 
+// BANNING
 exports.addToBannedChats = function (chatId) {
   bannedChats.add(chatId);
 }

@@ -1,6 +1,6 @@
 const TelegramBot = require('node-telegram-bot-api');
 const { ADMIN_CHAT_ID, TOKEN } = require('./constants.js');
-const { showResponderName, addToBannedChats, isChatBanned, removeFromBannedChats, privateMode } = require('./settings.js')
+const { addToBannedChats, isChatBanned, removeFromBannedChats, isUserPrivate, doesUserSign } = require('./settings.js')
 
 exports.bot = new TelegramBot(TOKEN, { polling: true });
 exports.forwardedMessagesA2U = new Map();
@@ -38,7 +38,7 @@ exports.getResponderMessage = function (msg) {
 
   let responderMsg = '';
 
-  if (showResponderName()) {
+  if (doesUserSign(msg.from)) {
     let fullName = exports.getFullNameFromUser(msg.from);
     responderMsg = `Response written by: ${fullName}`
   }
@@ -70,7 +70,7 @@ exports.banChat = async function (chatId) {
   addToBannedChats(chatId);
   exports.bot.sendMessage(chatId, "You've been banned from the bot.");
 
-  if (privateMode(user))
+  if (isUserPrivate(user))
     exports.bot.sendMessage(ADMIN_CHAT_ID, `The user with ID ${chatId} has been banned from the bot.`);
   else
     exports.bot.sendMessage(ADMIN_CHAT_ID, `${userFullName} (${username}:${chatId}) has been banned from the bot.`);
@@ -90,7 +90,7 @@ exports.unbanChat = async function (chatId) {
   removeFromBannedChats(chatId);
   exports.bot.sendMessage(chatId, "You're no longer banned from the bot.");
 
-  if (privateMode(user))
+  if (isUserPrivate(user))
     exports.bot.sendMessage(ADMIN_CHAT_ID, `The user with ID ${chatId} has been removed from the banned list.`);
   else
     exports.bot.sendMessage(ADMIN_CHAT_ID, `${userFullName} (${username}:${chatId}) has been removed from the banned list.`);

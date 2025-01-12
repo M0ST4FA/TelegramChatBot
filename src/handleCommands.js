@@ -1,6 +1,6 @@
-const { ADMIN_CHAT_ID, COMMANDS_MESSAGE, USER_COMMANDS_MESSAGE } = require('./constants.js');
+const { ADMIN_CHAT_ID, COMMANDS_MESSAGE, USER_COMMANDS_MESSAGE, USER_WELCOMING_MESSAGE } = require('./constants.js');
 const { bot, forwardedMessagesA2U, adminRepliesMessagesA2U, userMessagesU2A, getFullNameFromUser, getUserNameFromUser, banChat, unbanChat } = require('./common.js');
-const { toggleResponderName, toggleRepliedToMessage, showResponderName, showRepliedToMessage, toggleForwardMode, forwardMode, togglePrivateMode, privateMode, bannedChats, isChatBanned } = require('./settings.js');
+const { isUserPrivate, bannedChats, isChatBanned, doNotSignMessagesOfUser, signMessagesOfUser, hideRepliedToMessages, showRepliedToMessages, disableForwardMode, enableForwardMode, disablePrivateMode, enablePrivateMode } = require('./settings.js');
 
 exports.handleAdminChatCommands = function handleCommands(msg) {
   const msgText = msg.text || '';
@@ -24,15 +24,58 @@ exports.handleAdminChatCommands = function handleCommands(msg) {
   else if (msgText == '/commands') {
     bot.sendMessage(ADMIN_CHAT_ID, COMMANDS_MESSAGE);
   }
-  else if (msgText == '/toggleResponderName') {
-    toggleResponderName();
-    bot.sendMessage(ADMIN_CHAT_ID, showResponderName() ? "The name of the responder will be quoted in messages." : "The name of the responder will NOT be quoted in messages.");
-  } else if (msgText == '/toggleReplies') {
-    toggleRepliedToMessage();
-    bot.sendMessage(ADMIN_CHAT_ID, showRepliedToMessage() ? "The message that was replied to will be quoted in the response." : "The message that was replied to will NOT be quoted in the response.");
-  } else if (msgText == '/toggleForwardMode') {
-    toggleForwardMode();
-    bot.sendMessage(ADMIN_CHAT_ID, forwardMode() ? "User messages sent to the bot will be simply forwarded." : "User messages sent to the bot will NOT be forwarded. Instead, they will be sent.");
+  else if (msgText.startsWith('/sign ')) {
+    const regexMatch = /\/sign (on|off)/.exec(msgText);
+
+    if (!regexMatch) {
+      bot.sendMessage(ADMIN_CHAT_ID, 'Incorrect format of command. The correct format is: /sign on|off.');
+      return true;
+    }
+
+    const res = regexMatch.at(1);
+
+    if (res == 'off') {
+      doNotSignMessagesOfUser(msg.from);
+      bot.sendMessage(ADMIN_CHAT_ID, `Messages sent by ${getFullNameFromUser(msg.from)} (${getUserNameFromUser(msg.from)}) will NOT be signed.`);
+    } else {
+      signMessagesOfUser(msg.from);
+      bot.sendMessage(ADMIN_CHAT_ID, `Messages sent by ${getFullNameFromUser(msg.from)} (${getUserNameFromUser(msg.from)}) will be signed.`);
+    }
+
+  } else if (msgText.startsWith('/replies ')) {
+    const regexMatch = /\/replies (on|off)/.exec(msgText);
+
+    if (!regexMatch) {
+      bot.sendMessage(ADMIN_CHAT_ID, 'Incorrect format of command. The correct format is: /replies on|off.');
+      return true;
+    }
+
+    if (res == 'off') {
+      hideRepliedToMessages();
+      bot.sendMessage(ADMIN_CHAT_ID, "The message that was replied to by the user will NOT be quoted in the response.");
+    } else {
+      showRepliedToMessages();
+      bot.sendMessage(ADMIN_CHAT_ID, "The message that was replied to by the user will be quoted in the response.");
+    }
+
+  } else if (msgText.startsWith('/forwarding ')) {
+    const regexMatch = /\/forwarding (on|off)/.exec(msgText);
+
+    if (!regexMatch) {
+      bot.sendMessage(ADMIN_CHAT_ID, 'Incorrect format of command. The correct format is: /forwarding on|off.');
+      return true;
+    }
+
+    const res = regexMatch.at(1);
+
+    if (res == 'off') {
+      disableForwardMode();
+      bot.sendMessage(ADMIN_CHAT_ID, "User messages sent to the bot will NOT be forwarded. Instead, they will be sent.");
+    } else {
+      enableForwardMode();
+      bot.sendMessage(ADMIN_CHAT_ID, "User messages sent to the bot will be simply forwarded.");
+    }
+
   } else if (msgText == '/bannedUsers') {
     const bannedChatIds = bannedChats();
 
@@ -66,7 +109,7 @@ exports.handleAdminChatCommands = function handleCommands(msg) {
     const regexMatch = /\/ban (\d{8,})/.exec(msgText);
 
     if (!regexMatch) {
-      bot.sendMessage(ADMIN_CHAT_ID, 'Incorrect format of command. The correct format is: /ban@<userId>. User Id must be at least 8 digits long.');
+      bot.sendMessage(ADMIN_CHAT_ID, 'Incorrect format of command. The correct format is: /ban <userId>. User Id must be at least 8 digits long.');
       return true;
     }
 
@@ -94,8 +137,6 @@ exports.handleAdminChatCommands = function handleCommands(msg) {
 }
 
 const mapForwardedMessageToUserChatID = function (msg) {
-
-  console.log(msg);
 
   const userChatDetail = forwardedMessagesA2U.get(msg.message_id);
 
@@ -163,7 +204,7 @@ exports.handleAdminChatReplyCommands = function (msg) { // msg must be a reply t
     bot.getChatMember(userChatId, userChatId)
       .then(function (member) {
         const user = member.user;
-        const isInPrivateMode = privateMode(user);
+        const isInPrivateMode = isUserPrivate(user);
         id = user.id;
 
         if (isInPrivateMode) {
@@ -235,11 +276,32 @@ exports.handleUserChatCommands = function (msg) {
   if (msgText == '/commands') {
     bot.sendMessage(userChatId, USER_COMMANDS_MESSAGE);
   }
-  else if (msgText == '/start')
+  else if (msgText == '/start') {
+    if (userMessagesU2A.has(msg.message_id)) // If the user has already /start ed the chat
+      bot.sendMessage(userChatId, "Your chat has already started. Send whatever message you want and we will hopefully respond ASAP.");
+    else
+      bot.sendMessage(userChatId, USER_WELCOMING_MESSAGE);
+
     return true;
-  else if (msgText == '/togglePrivateMode') {
-    togglePrivateMode(msg.from);
-    bot.sendMessage(userChatId, privateMode(msg.from) ? "You entered private mode." : "You left private mode.");
+  }
+  else if (msgText.startsWith('/private ')) {
+    const regexMatch = /\/private (on|off)/.exec(msgText);
+
+    if (!regexMatch) {
+      bot.sendMessage(ADMIN_CHAT_ID, 'Incorrect format of command. The correct format is: /private on|off.');
+      return true;
+    }
+
+    const res = regexMatch.at(1);
+
+    if (res == 'off') {
+      disablePrivateMode(msg.from)
+      bot.sendMessage(userChatId, "You left private mode.");
+    } else {
+      enablePrivateMode(msg.from)
+      bot.sendMessage(userChatId, "You entered private mode.");
+    }
+
   }
   else {
     bot.sendMessage(userChatId, "Unknown command.");
