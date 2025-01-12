@@ -16,11 +16,16 @@ exports.setUserMessagesU2A = function (chatId, userMsgId, adminMsgId) {
 
 }
 
+exports.getUserNameFromUser = function (user) {
+  return `@${user.username}`;
+}
+
 exports.getFullNameFromUser = function (user) {
   const firstName = user.first_name || '';
   const lastName = user.last_name || '';
 
-  fullName = `${firstName} ${lastName}`;
+  let fullName = `${firstName} ${lastName}`;
+  fullName = fullName.trimEnd();
 
   if (fullName == 'عمر عبدالعليم') {
     fullName = 'عومر عبعليم آل دحيح'
@@ -43,8 +48,9 @@ exports.getResponderMessage = function (msg) {
 
 exports.getSenderMessage = function (msg) {
 
-  let fullName = exports.getFullNameFromUser(msg.from);
-  const senderMsg = `تم الإرسال بواسطة: ${fullName}`
+  const fullName = exports.getFullNameFromUser(msg.from);
+  const username = exports.getUserNameFromUser(msg.from);
+  const senderMsg = `تم الإرسال بواسطة: ${fullName} (${username})`
 
   return senderMsg;
 }

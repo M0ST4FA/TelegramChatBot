@@ -3,6 +3,7 @@ let showResponderName = true;
 let showRepliedToMessage = true;
 let forwardMode = false;
 const privateModeUsers = new Set();
+const bannedChats = new Set();
 
 exports.showResponderName = function () {
   return showResponderName;
@@ -37,4 +38,12 @@ exports.togglePrivateMode = function (user) {
 
 exports.privateMode = function (user) {
   return privateModeUsers.has(user.id);
+}
+
+exports.banChat = function (chatId) {
+  bannedChats.add(chatId);
+}
+
+exports.chatBanned = function (chatId) {
+  return bannedChats.has(chatId);
 }

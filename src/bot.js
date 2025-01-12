@@ -1,9 +1,9 @@
 const { ADMIN_CHAT_ID } = require('./constants.js');
-const { bot, forwardedMessagesA2U, userMessagesU2A, adminRepliesMessagesA2U, setUserMessagesU2A, getSenderMessage, getFullNameFromUser } = require('./common.js');
+const { bot, forwardedMessagesA2U, userMessagesU2A, adminRepliesMessagesA2U, setUserMessagesU2A, getSenderMessage, getFullNameFromUser, getUserNameFromUser } = require('./common.js');
 const { handleCommands, handleUserChatCommands } = require('./handleCommands.js');
 const { handleReplies } = require('./handleReplies.js');
 const { editMessageText, editMessageCaption } = require('./editMessage.js');
-const { forwardMode, privateMode } = require('./settings.js');
+const { forwardMode, privateMode, chatBanned } = require('./settings.js');
 
 // Handle incoming messages from users
 bot.on('message', async (msg) => {
@@ -20,6 +20,9 @@ bot.on('message', async (msg) => {
 
       // If the user has sent a command, handle it
       if (handleUserChatCommands(msg))
+        return;
+
+      if (chatBanned(chatId))
         return;
 
       if (forwardMode() && !privateMode(msg.from))
@@ -49,10 +52,12 @@ bot.on('message', async (msg) => {
 
           let text = msg.text || '';
           let senderMessage = '';
+          let username;
 
           if (!privateMode(msg.from)) {
             senderMessage = getSenderMessage(msg);
             text += '\n' + senderMessage;
+            username = getUserNameFromUser(msg.from);
           }
 
           if (replyToMessage) {
@@ -61,17 +66,24 @@ bot.on('message', async (msg) => {
 
             const options = {
               reply_to_message_id: replyToAdminMessageId,
-              entities: privateMode(msg.from) ? [] : [{ type: "blockquote", offset: text.indexOf(`${senderMessage}`), length: senderMessage.length }]
+              entities: privateMode(msg.from) ? [] : [
+                { type: "blockquote", offset: text.indexOf(`${senderMessage}`), length: senderMessage.length },
+                { type: "mention", offset: text.indexOf(username), length: username.length }
+              ]
             }
 
             bot.sendMessage(ADMIN_CHAT_ID, text, options).then(adminMsg => {
               forwardedMessagesA2U.set(adminMsg.message_id, { chatId, messageId });
               setUserMessagesU2A(chatId, messageId, adminMsg.message_id);
             });
-          } else {
+          }
+          else {
 
             const options = {
-              entities: privateMode(msg.from) ? [] : [{ type: "blockquote", offset: text.indexOf(`${senderMessage}`), length: senderMessage.length }]
+              entities: privateMode(msg.from) ? [] : [
+                { type: "blockquote", offset: text.indexOf(`${senderMessage}`), length: senderMessage.length },
+                { type: "mention", offset: text.indexOf(username), length: username.length }
+              ]
             }
 
             bot.sendMessage(ADMIN_CHAT_ID, text, options).then(adminMsg => {

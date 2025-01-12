@@ -1,6 +1,6 @@
 const { ADMIN_CHAT_ID, COMMANDS_MESSAGE, USER_COMMANDS_MESSAGE } = require('./constants.js');
-const { bot, forwardedMessagesA2U, adminRepliesMessagesA2U, userMessagesU2A } = require('./common.js');
-const { toggleResponderName, toggleRepliedToMessage, showResponderName, showRepliedToMessage, toggleForwardMode, forwardMode, togglePrivateMode, privateMode } = require('./settings.js');
+const { bot, forwardedMessagesA2U, adminRepliesMessagesA2U, userMessagesU2A, getFullNameFromUser } = require('./common.js');
+const { toggleResponderName, toggleRepliedToMessage, showResponderName, showRepliedToMessage, toggleForwardMode, forwardMode, togglePrivateMode, privateMode, banChat } = require('./settings.js');
 
 exports.handleCommands = function handleCommands(msg) {
   const msgText = msg.text || '';
@@ -42,9 +42,9 @@ exports.handleCommands = function handleCommands(msg) {
   return true;
 }
 
-exports.handleUserCommands = function (msg) { // msg must be a reply to another message
+exports.handleUserCommands = async function (msg) { // msg must be a reply to another message
 
-  const userCommands = ["delete", "عومر", "info"];
+  const userCommands = ["delete", "عومر", "ban", "عومر2", "info"];
 
   if (!msg.text)
     return false;
@@ -52,26 +52,49 @@ exports.handleUserCommands = function (msg) { // msg must be a reply to another 
   if (!userCommands.includes(msg.text))
     return false;
 
+  const replyToMessage = msg.reply_to_message;
+  const replyToMessageId = replyToMessage.message_id;
+
   if (msg.text == "delete" || msg.text == "عومر") {
 
     if (adminRepliesMessagesA2U.size == 0)
       return false;
 
-    const replyToMessage = msg.reply_to_message;
-    const msgId = replyToMessage.message_id;
-    const replyDetails = adminRepliesMessagesA2U.get(msgId);
+    const replyDetails = adminRepliesMessagesA2U.get(replyToMessageId);
 
     if (!replyDetails) {
-      bot.sendMessage(ADMIN_CHAT_ID, 'Message not present in bot data structures.', { reply_to_message_id: msgId });
+      bot.sendMessage(ADMIN_CHAT_ID, 'Message not present in bot data structures.', { reply_to_message_id: replyToMessageId });
       return false;
     }
 
     const { chatId, messageId } = replyDetails;
 
     bot.deleteMessage(chatId, messageId);
-    bot.sendMessage(ADMIN_CHAT_ID, 'Deleted message.', { reply_to_message_id: msgId });
+    bot.sendMessage(ADMIN_CHAT_ID, 'Deleted message.', { reply_to_message_id: replyToMessageId });
 
-  } else if (msg.text == "info") {
+  }
+  else if (msg.text == "ban" || msg.text == "عومر2") {
+    console.log(msg);
+
+    const replyDetails = forwardedMessagesA2U.get(replyToMessageId);
+
+    if (!replyDetails) {
+      bot.sendMessage(ADMIN_CHAT_ID, 'Message not present in bot data structures.', { reply_to_message_id: replyToMessageId });
+      return false;
+    }
+
+    const { chatId } = replyDetails;
+
+    const chatMember = await bot.getChatMember(chatId, chatId);
+    const user = chatMember.user;
+    const userFullName = getFullNameFromUser(user);
+
+    banChat(chatId);
+    bot.sendMessage(chatId, "You've been banned from the bot.");
+    bot.sendMessage(ADMIN_CHAT_ID, `${userFullName} has been banned from the bot.`);
+
+  }
+  else if (msg.text == "info") {
 
   }
 
