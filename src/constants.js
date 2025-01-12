@@ -10,3 +10,8 @@ exports.COMMANDS_MESSAGE = `
       🤖 /toggleReplies Toggles showing the message that admins have replied to to the user.
       🤖 /toggleForwardMode Toggles forwarding user messages or sending them without forwarding.
       `
+exports.USER_COMMANDS_MESSAGE = `
+      ✳️ Commands supported by the bot:
+      🤖 /commands Shows this message.
+      🤖 /togglePrivateMode Toggles private mode. In private mode, your name and information is not available to the admins of the bot.
+      `

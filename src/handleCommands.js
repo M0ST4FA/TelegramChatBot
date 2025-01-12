@@ -1,6 +1,6 @@
-const { ADMIN_CHAT_ID, COMMANDS_MESSAGE } = require('./constants.js');
+const { ADMIN_CHAT_ID, COMMANDS_MESSAGE, USER_COMMANDS_MESSAGE } = require('./constants.js');
 const { bot, forwardedMessagesA2U, adminRepliesMessagesA2U, userMessagesU2A } = require('./common.js');
-const { toggleResponderName, toggleRepliedToMessage, showResponderName, showRepliedToMessage, toggleForwardMode, forwardMode } = require('./settings.js');
+const { toggleResponderName, toggleRepliedToMessage, showResponderName, showRepliedToMessage, toggleForwardMode, forwardMode, togglePrivateMode, privateMode } = require('./settings.js');
 
 exports.handleCommands = function handleCommands(msg) {
   const msgText = msg.text || '';
@@ -39,7 +39,7 @@ exports.handleCommands = function handleCommands(msg) {
     bot.sendMessage(ADMIN_CHAT_ID, COMMANDS_MESSAGE);
   }
 
-  return false;
+  return true;
 }
 
 exports.handleUserCommands = function (msg) { // msg must be a reply to another message
@@ -73,6 +73,34 @@ exports.handleUserCommands = function (msg) { // msg must be a reply to another 
 
   } else if (msg.text == "info") {
 
+  }
+
+  return true;
+}
+
+exports.handleUserChatCommands = function (msg) {
+
+  const msgText = msg.text || '';
+  const userChatId = msg.chat.id;
+
+  if (!msgText)
+    return false;
+
+  if (msgText[0] != '/')
+    return false;
+
+  if (msgText == '/commands') {
+    bot.sendMessage(userChatId, USER_COMMANDS_MESSAGE);
+  }
+  else if (msgText == '/start')
+    return true;
+  else if (msgText == '/togglePrivateMode') {
+    togglePrivateMode(msg.from);
+    bot.sendMessage(userChatId, privateMode(msg.from) ? "You entered private mode." : "You left private mode.");
+  }
+  else {
+    bot.sendMessage(userChatId, "Unknown command.");
+    bot.sendMessage(userChatId, COMMANDS_MESSAGE);
   }
 
   return true;
