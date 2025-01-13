@@ -1,8 +1,8 @@
 const { ADMIN_CHAT_ID } = require('./constants.js');
-const { bot, adminRepliesMessagesA2U } = require('./common.js');
+const { bot, adminRepliesMessagesA2U, userMessagesU2A } = require('./common.js');
 const { handleUserChatCommands, handleAdminChatCommands } = require('./handleCommands.js');
 const { sendAdminMessage, sendUserMessage } = require('./handleReplies.js');
-const { editMessageText, editMessageCaption } = require('./editMessage.js');
+const { editAdminMessageText, editUserMessageText, editAdminMessageCaption: editMessageCaption, editUserMessageCaption, editAdminMessageCaption } = require('./editMessage.js');
 const { isChatBanned } = require('./settings.js');
 
 // Handle incoming messages from users
@@ -37,6 +37,7 @@ bot.on('message', async (msg) => {
         return;
 
     }
+
   } catch (err) {
     console.log(err);
     bot.sendMessage(ADMIN_CHAT_ID, `Exception: ${err.message}`);
@@ -44,21 +45,34 @@ bot.on('message', async (msg) => {
 
 });
 
-bot.on('edited_message', async (msg) => {
+bot.on('edited_message_text', async (msg) => {
 
   const msgId = msg.message_id;
-  const replyToMessage = msg.reply_to_message;
+  const msgChatId = msg.chat.id;
 
-  // If this is not a message that replies to another message
-  if (!replyToMessage)
-    return;
+  if (msgChatId == ADMIN_CHAT_ID) {
+    const replyToMessage = msg.reply_to_message;
 
-  // If this is not a message we've sent to some user
-  if (!adminRepliesMessagesA2U.has(msgId))
-    return;
+    // If this is not a message that replies to another message
+    if (!replyToMessage)
+      return;
 
-  if (msg.text)
-    editMessageText(msg);
+    // If this is not a message we've sent to some user
+    if (!adminRepliesMessagesA2U.has(msgId))
+      return;
+
+    if (msg.text)
+      editAdminMessageText(msg);
+  } else {
+
+    // If the bot doesn't know about this message
+    if (!userMessagesU2A?.get(msgChatId)?.get(msgId))
+      return;
+
+    if (msg.text)
+      editUserMessageText(msg);
+
+  }
 
   return;
 })
@@ -66,18 +80,32 @@ bot.on('edited_message', async (msg) => {
 bot.on('edited_message_caption', async (msg) => {
 
   const msgId = msg.message_id;
-  const replyToMessage = msg.reply_to_message;
+  const msgChatId = msg.chat.id;
 
-  // If this is not a message that replies to another message
-  if (!replyToMessage)
-    return;
+  if (msgChatId == ADMIN_CHAT_ID) {
+    const replyToMessage = msg.reply_to_message;
 
-  // If this is not a message we've sent to some user
-  if (!adminRepliesMessagesA2U.has(msgId))
-    return;
+    // If this is not a message that replies to another message
+    if (!replyToMessage)
+      return;
 
-  if (msg.caption)
-    editMessageCaption(msg);
+    // If this is not a message we've sent to some user
+    if (!adminRepliesMessagesA2U.has(msgId))
+      return;
+
+    if (msg.caption)
+      editAdminMessageCaption(msg);
+
+  } else {
+
+    // If the bot doesn't know about this message
+    if (!userMessagesU2A?.get(msgChatId)?.get(msgId))
+      return;
+
+    if (msg.caption)
+      editUserMessageCaption(msg);
+
+  }
 
   return;
 })

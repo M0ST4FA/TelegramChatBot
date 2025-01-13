@@ -227,9 +227,8 @@ const sendAdminMessageToUserChat = function (msg) {
   } else if (msg.document) {
 
     const options = {
-      reply_to_message_id: repliedToMessagesAreShown() ? messageIdInUserChat : undefined,
-      caption: userSigns ? responderMsg : undefined,
-      caption_entities: userSigns ? [{ type: "blockquote", offset: text.indexOf(`${responderMsg}`), length: responderMsg.length }] : []
+      ...replyToMessageIdOption,
+      ...captionOption
     }
 
     // Send the document
@@ -242,6 +241,14 @@ const sendAdminMessageToUserChat = function (msg) {
 
     // Send the audio
     userSentMsgInAdminChat = bot.sendAudio(userChatId, msg.audio.file_id, options);
+  } else if (msg.voice) {
+    const options = {
+      ...replyToMessageIdOption,
+      ...captionOption
+    }
+
+    // Send the audio
+    userSentMsgInAdminChat = bot.sendAudio(userChatId, msg.voice.file_id, options);
   } else if (msg.location) {
     const options = replyToMessageIdOption;
 
@@ -418,6 +425,15 @@ const sendUserMessageToAdminChat = function (msg) {
 
     // Send the audio
     userSentMsgInAdminChat = bot.sendAudio(ADMIN_CHAT_ID, msg.audio.file_id, options);
+  } else if (msg.voice) {
+
+    const options = {
+      ...replyToMessageIdOption,
+      ...captionOption
+    }
+
+    // Send the audio
+    userSentMsgInAdminChat = bot.sendAudio(ADMIN_CHAT_ID, msg.voice.file_id, options);
   } else if (msg.location) {
 
     const options = replyToMessageIdOption;
