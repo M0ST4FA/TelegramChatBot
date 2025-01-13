@@ -18,7 +18,7 @@ exports.setUserMessagesU2A = function (chatId, userMsgId, adminMsgId) {
 }
 
 exports.getUserNameFromUser = function (user) {
-  return `@${user.username}`;
+  return user.username ? `@${user.username}` : '@';
 }
 
 exports.getFullNameFromUser = function (user) {
@@ -34,23 +34,34 @@ exports.getFullNameFromUser = function (user) {
   return fullName;
 }
 
-exports.getResponderMessage = function (msg) {
+exports.getResponderMessage = function (msg, markdown = true) {
 
   let responderMsg = '';
 
-  if (doesUserSign(msg.from)) {
-    let fullName = exports.getFullNameFromUser(msg.from);
-    responderMsg = `Response written by: ${fullName}`
-  }
+  if (!doesUserSign(msg.from))
+    return responderMsg;
+
+  const fullName = exports.getFullNameFromUser(msg.from);
+
+  if (markdown)
+    responderMsg = `>${fullName}`;
+  else
+    responderMsg = `${fullName}`;
 
   return responderMsg;
 }
 
-exports.getSenderMessage = function (msg) {
+exports.getSenderMessage = function (msg, markdown = true) {
 
   const fullName = exports.getFullNameFromUser(msg.from);
   const username = exports.getUserNameFromUser(msg.from);
-  const senderMsg = `Message sent by: ${fullName} (${username})`
+  const userId = msg.from.id;
+  let senderMsg = '';
+
+  if (markdown)
+    senderMsg = `>${fullName} \\([${username}](tg://user?id=${userId}):${userId}\\)`
+  else
+    senderMsg = `${fullName} (${username}:${userId})`;
 
   return senderMsg;
 }

@@ -1,7 +1,7 @@
 const { ADMIN_CHAT_ID } = require('./constants.js');
 const { bot, adminRepliesMessagesA2U } = require('./common.js');
 const { handleUserChatCommands, handleAdminChatCommands } = require('./handleCommands.js');
-const { handleReplies, sendUserMessage } = require('./handleReplies.js');
+const { sendAdminMessage, sendUserMessage } = require('./handleReplies.js');
 const { editMessageText, editMessageCaption } = require('./editMessage.js');
 const { isChatBanned } = require('./settings.js');
 
@@ -23,7 +23,8 @@ bot.on('message', async (msg) => {
       if (handleUserChatCommands(msg))
         return;
 
-      sendUserMessage(msg);
+      if (sendUserMessage(msg))
+        return;
 
     } else { // MESSAGES COMING FROM THE ADMIN CHAT
 
@@ -32,7 +33,7 @@ bot.on('message', async (msg) => {
         return;
 
       // If this returns true, the message was handled successfully
-      if (handleReplies(msg))
+      if (sendAdminMessage(msg))
         return;
 
     }
@@ -40,6 +41,7 @@ bot.on('message', async (msg) => {
     console.log(err);
     bot.sendMessage(ADMIN_CHAT_ID, `Exception: ${err.message}`);
   };
+
 });
 
 bot.on('edited_message', async (msg) => {
