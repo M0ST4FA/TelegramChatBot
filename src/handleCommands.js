@@ -1,6 +1,56 @@
-const { ADMIN_CHAT_ID, COMMANDS_MESSAGE, USER_COMMANDS_MESSAGE, USER_WELCOMING_MESSAGE } = require('./constants.js');
-const { bot, forwardedMessagesA2U, adminRepliesMessagesA2U, userMessagesU2A, getFullNameFromUser, getUserNameFromUser, banChat, unbanChat } = require('./common.js');
-const { isUserPrivate, bannedChats, isChatBanned, doNotSignMessagesOfUser, signMessagesOfUser, hideRepliedToMessages, showRepliedToMessages, disableForwardMode, enableForwardMode, disablePrivateMode, enablePrivateMode } = require('./settings.js');
+const { ADMIN_CHAT_ID, USER_WELCOMING_MESSAGE_EN, bot, USER_COMMANDS_MESSAGE_EN } = require('./constants.js');
+const { forwardedMessagesA2U, adminRepliesMessagesA2U, userMessagesU2A, getFullNameFromUser, getUserNameFromUser } = require('./common.js');
+const { isUserPrivate, bannedChats, isChatBanned, doNotSignMessagesOfUser, signMessagesOfUser, hideRepliedToMessages, showRepliedToMessages, disableForwardMode, enableForwardMode, disablePrivateMode, enablePrivateMode, setArabicLanguage, setEnglishLanguage, addToBannedChats, removeFromBannedChats } = require('./settings.js');
+const { sendDiagnosticMessage, DiagnosticMessage } = require('./diagnostics.js');
+
+const banChat = async function (chatId, banMsgId) {
+
+  const options = {
+    reply_to_message_id: banMsgId,
+    user: { id: chatId } // Fill it for the first call
+  }
+
+  // If user is already banned
+  if (isChatBanned(chatId))
+    return sendDiagnosticMessage(DiagnosticMessage.USER_IS_ALREADY_BANNED, ADMIN_CHAT_ID, options);
+
+  // Add the user to the list of banned users
+  addToBannedChats(chatId);
+
+  // Send diagnostic message to the user
+  sendDiagnosticMessage(DiagnosticMessage.USER_BANNING_MESSAGE, chatId);
+
+  // Send diagnostic message to admin chat
+  const chatMember = await bot.getChatMember(chatId, chatId);
+  const user = chatMember.user;
+  options.user = user;
+  sendDiagnosticMessage(DiagnosticMessage.ADMIN_BANNING_MESSAGE, ADMIN_CHAT_ID, options);
+}
+
+const unbanChat = async function (chatId, unbanMsgId) {
+
+  const options = {
+    reply_to_message_id: unbanMsgId,
+    user: { id: chatId } // Fill it for the first call
+  }
+
+  // If user is already not banned
+  if (!isChatBanned(chatId))
+    return sendDiagnosticMessage(DiagnosticMessage.USER_IS_ALREADY_NOT_BANNED, ADMIN_CHAT_ID, options);
+
+  // Remove the user from the list of banned users
+  removeFromBannedChats(chatId);
+
+  // Inform the user that they have been removed from the list of banned users
+  sendDiagnosticMessage(DiagnosticMessage.USER_NO_LONGER_BANNED_MESSAGE, chatId);
+
+  // Inform the admin chat that the user has been removed from the list of banned users
+  const chatMember = await bot.getChatMember(chatId, chatId);
+  const user = chatMember.user;
+  options.user = user;
+  sendDiagnosticMessage(DiagnosticMessage.ADMIN_USER_NO_LONGER_BANNED_MESSAGE, ADMIN_CHAT_ID, options);
+
+}
 
 exports.handleAdminChatCommands = function handleCommands(msg) {
   const msgText = msg.text || '';
@@ -21,76 +71,90 @@ exports.handleAdminChatCommands = function handleCommands(msg) {
     bot.sendMessage(ADMIN_CHAT_ID, `Forwarded messages from the bot (admin chat to user chat): \n${forwardedMessages}\nAdmin replies to users (admin chat to user chat):\n${adminReplies}\nMessages in user-bot private chat:${userMessages}`);
     return true;
   }
-  else if (msgText == '/commands') {
-    bot.sendMessage(ADMIN_CHAT_ID, COMMANDS_MESSAGE);
-  }
-  else if (msgText.startsWith('/sign ')) {
+  else if (msgText == '/commands')
+    sendDiagnosticMessage(DiagnosticMessage.ADMIN_COMMANDS_MESSAGE, ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id });
+  else if (msgText.startsWith('/sign')) {
     const regexMatch = /\/sign (on|off)/.exec(msgText);
 
     if (!regexMatch) {
-      bot.sendMessage(ADMIN_CHAT_ID, 'Incorrect format of command. The correct format is: /sign on|off.');
+      sendDiagnosticMessage(DiagnosticMessage.INCORRECT_FORMAT_OF_COMMAND, ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id, correct_format: '/sign on\\|off' })
       return true;
     }
 
     const res = regexMatch.at(1);
 
-    if (res == 'off') {
-      doNotSignMessagesOfUser(msg.from);
-      bot.sendMessage(ADMIN_CHAT_ID, `Messages sent by ${getFullNameFromUser(msg.from)} (${getUserNameFromUser(msg.from)}) will NOT be signed.`);
-    } else {
-      signMessagesOfUser(msg.from);
-      bot.sendMessage(ADMIN_CHAT_ID, `Messages sent by ${getFullNameFromUser(msg.from)} (${getUserNameFromUser(msg.from)}) will be signed.`);
+    const options = {
+      reply_to_message_id: msg.message_id,
+      user: msg.from
     }
 
-  } else if (msgText.startsWith('/replies ')) {
+    if (res == 'off') {
+      doNotSignMessagesOfUser(msg.from);
+      sendDiagnosticMessage(DiagnosticMessage.USER_MESSAGES_WILL_NOT_BE_SIGNED_MESSAGE, ADMIN_CHAT_ID, options);
+    } else {
+      signMessagesOfUser(msg.from);
+      sendDiagnosticMessage(DiagnosticMessage.USER_MESSAGES_WILL_BE_SIGNED_MESSAGE, ADMIN_CHAT_ID, options);
+    }
+
+  } else if (msgText.startsWith('/replies')) {
     const regexMatch = /\/replies (on|off)/.exec(msgText);
 
     if (!regexMatch) {
-      bot.sendMessage(ADMIN_CHAT_ID, 'Incorrect format of command. The correct format is: /replies on|off.');
+      sendDiagnosticMessage(DiagnosticMessage.INCORRECT_FORMAT_OF_COMMAND, ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id, correct_format: '/replies on\\|off' })
       return true;
+    }
+
+    const res = regexMatch.at(1);
+
+    const options = {
+      replied_to_message_id: msg.message_id
     }
 
     if (res == 'off') {
       hideRepliedToMessages();
-      bot.sendMessage(ADMIN_CHAT_ID, "The message that was replied to by the user will NOT be quoted in the response.");
+      sendDiagnosticMessage(DiagnosticMessage.HIDE_REPLIED_TO_MESSAGES_MESSAGE, ADMIN_CHAT_ID, options);
     } else {
       showRepliedToMessages();
-      bot.sendMessage(ADMIN_CHAT_ID, "The message that was replied to by the user will be quoted in the response.");
+      sendDiagnosticMessage(DiagnosticMessage.SHOW_REPLIED_TO_MESSAGES_MESSAGE, ADMIN_CHAT_ID, options);
     }
 
-  } else if (msgText.startsWith('/forwarding ')) {
+  } else if (msgText.startsWith('/forwarding')) {
     const regexMatch = /\/forwarding (on|off)/.exec(msgText);
 
     if (!regexMatch) {
-      bot.sendMessage(ADMIN_CHAT_ID, 'Incorrect format of command. The correct format is: /forwarding on|off.');
+      sendDiagnosticMessage(DiagnosticMessage.INCORRECT_FORMAT_OF_COMMAND, ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id, correct_format: '/forwarding on\\|off' })
       return true;
     }
 
     const res = regexMatch.at(1);
 
+    const options = {
+      reply_to_message_id: msg.message_id
+    }
+
     if (res == 'off') {
       disableForwardMode();
-      bot.sendMessage(ADMIN_CHAT_ID, "User messages sent to the bot will NOT be forwarded. Instead, they will be sent.");
+      sendDiagnosticMessage(DiagnosticMessage.FORWARDING_IS_OFF_MESSAGE, ADMIN_CHAT_ID, options);
     } else {
       enableForwardMode();
-      bot.sendMessage(ADMIN_CHAT_ID, "User messages sent to the bot will be simply forwarded.");
+      sendDiagnosticMessage(DiagnosticMessage.FORWARDING_IS_ON_MESSAGE, ADMIN_CHAT_ID, options);
     }
 
   } else if (msgText == '/bannedUsers') {
     const bannedChatIds = bannedChats();
 
     if (bannedChatIds.size == 0) {
-      bot.sendMessage(ADMIN_CHAT_ID, "There are no banned users.");
+      sendDiagnosticMessage(DiagnosticMessage.NO_BANNED_USERS_EXIST, ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id })
       return true;
     }
 
-    bot.sendMessage(ADMIN_CHAT_ID, "Banned users are:");
+    sendDiagnosticMessage(DiagnosticMessage.DISPLAYING_BANNED_USERS_NOW, ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id })
     for (const chatId of bannedChatIds) {
       bot.getChatMember(chatId, chatId)
         .then(member => {
           const user = member.user;
 
-          if (privateMode(user)) {
+          if (isUserPrivate(user)) {
             bot.sendMessage(ADMIN_CHAT_ID, `${user.id} [User is in private mode]`);
             return;
           }
@@ -109,29 +173,43 @@ exports.handleAdminChatCommands = function handleCommands(msg) {
     const regexMatch = /\/ban (\d{8,})/.exec(msgText);
 
     if (!regexMatch) {
-      bot.sendMessage(ADMIN_CHAT_ID, 'Incorrect format of command. The correct format is: /ban <userId>. User Id must be at least 8 digits long.');
+      sendDiagnosticMessage(DiagnosticMessage.INCORRECT_FORMAT_OF_COMMAND, ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id, correct_format: '/ban <user ID>' })
       return true;
     }
 
     const chatId = +regexMatch.at(1);
-    banChat(chatId);
+    banChat(chatId, msg.message_id);
 
   } else if (msgText.startsWith('/unban ')) {
     const regexMatch = /\/unban (\d{8,})/.exec(msgText);
 
     if (!regexMatch) {
-      bot.sendMessage(ADMIN_CHAT_ID, 'Incorrect format of command. The correct format is: /unban@<userId>. User Id must be at least 8 digits long.');
+      sendDiagnosticMessage(DiagnosticMessage.INCORRECT_FORMAT_OF_COMMAND, ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id, correct_format: '/unban <user ID>' })
       return true;
     }
 
     const chatId = +regexMatch.at(1);
-    unbanChat(chatId);
+    unbanChat(chatId, msg.message_id);
 
+  } else if (msgText.startsWith('/language')) {
+    const regexMatch = /\/language (ar|en)/.exec(msgText);
+
+    if (!regexMatch) {
+      sendDiagnosticMessage(DiagnosticMessage.BOT_LANGUAGE_MESSAGE, ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id })
+      return true;
+    }
+
+    const languageCode = regexMatch.at(1);
+
+    if (languageCode == "ar")
+      setArabicLanguage();
+    else
+      setEnglishLanguage();
+
+    sendDiagnosticMessage(DiagnosticMessage.BOT_LANGUAGE_CHANGE_MESSAGE, ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id });
   }
-  else {
-    bot.sendMessage(ADMIN_CHAT_ID, "Unknown command.");
-    bot.sendMessage(ADMIN_CHAT_ID, COMMANDS_MESSAGE);
-  }
+  else
+    sendDiagnosticMessage(DiagnosticMessage.UNKNOWN_COMMAND, ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id });
 
   return true;
 }
@@ -141,8 +219,8 @@ const mapForwardedMessageToUserChatID = function (msg) {
   const userChatDetail = forwardedMessagesA2U.get(msg.message_id);
 
   if (!userChatDetail) {
-    bot.sendMessage(ADMIN_CHAT_ID, 'Message not present in bot data structures.', { reply_to_message_id: msg.message_id });
-    return false;
+    sendDiagnosticMessage(DiagnosticMessage.MESSAGE_NOT_PRESENT_BOT_DATA_STRUCTURES, ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id });
+    return {};
   }
 
   return userChatDetail;
@@ -171,26 +249,26 @@ exports.handleAdminChatReplyCommands = function (msg) { // msg must be a reply t
     const replyDetails = adminRepliesMessagesA2U.get(replyToMessageId);
 
     if (!replyDetails) {
-      bot.sendMessage(ADMIN_CHAT_ID, 'Message not present in bot data structures.', { reply_to_message_id: replyToMessageId });
+      sendDiagnosticMessage(DiagnosticMessage.MESSAGE_NOT_PRESENT_BOT_DATA_STRUCTURES, ADMIN_CHAT_ID, { reply_to_message_id: replyToMessageId })
       return false;
     }
 
     const { chatId, messageId } = replyDetails;
 
     bot.deleteMessage(chatId, messageId);
-    bot.sendMessage(ADMIN_CHAT_ID, 'Deleted message.', { reply_to_message_id: replyToMessageId });
+    sendDiagnosticMessage(DiagnosticMessage.DELETED_MESSAGE, ADMIN_CHAT_ID, { reply_to_message_id: replyToMessageId })
 
   }
   else if (text == "ban" || text == "عومر2") {
 
     const { chatId: userChatId } = mapForwardedMessageToUserChatID(replyToMessage);
-    banChat(userChatId);
+    banChat(userChatId, msg.message_id);
 
   }
   else if (text == "unban" || text == "إلغاء عومر2") {
 
     const { chatId: userChatId } = mapForwardedMessageToUserChatID(replyToMessage);
-    unbanChat(userChatId);
+    unbanChat(userChatId, msg.message_id);
 
   }
   else if (text == "info" || text == "معلومات") {
@@ -246,9 +324,7 @@ exports.handleAdminChatReplyCommands = function (msg) { // msg must be a reply t
           return;
         }
 
-        console.log(photos);
         const photo = photos.photos.at(0).at(0);
-
 
         bot.sendPhoto(ADMIN_CHAT_ID, photo.file_id, {
           reply_to_message_id: msg.message_id,
@@ -273,14 +349,17 @@ exports.handleUserChatCommands = function (msg) {
   if (msgText[0] != '/')
     return false;
 
-  if (msgText == '/commands') {
-    bot.sendMessage(userChatId, USER_COMMANDS_MESSAGE);
+  const options = {
+    reply_to_message_id: msg.message_id
   }
+
+  if (msgText == '/commands')
+    sendDiagnosticMessage(DiagnosticMessage.USER_COMMANDS_MESSAGE, userChatId, options);
   else if (msgText == '/start') {
-    if (userMessagesU2A.has(msg.message_id)) // If the user has already /start ed the chat
-      bot.sendMessage(userChatId, "Your chat has already started. Send whatever message you want and we will hopefully respond ASAP.");
+    if (userMessagesU2A.has(userChatId)) // If the user has already /start ed the chat
+      sendDiagnosticMessage(DiagnosticMessage.USER_CHAT_HAS_ALREADY_STARTED, userChatId, options);
     else
-      bot.sendMessage(userChatId, USER_WELCOMING_MESSAGE);
+      sendDiagnosticMessage(DiagnosticMessage.USER_WELCOMING_MESSAGE, userChatId, options);
 
     return true;
   }
@@ -288,7 +367,7 @@ exports.handleUserChatCommands = function (msg) {
     const regexMatch = /\/private (on|off)/.exec(msgText);
 
     if (!regexMatch) {
-      bot.sendMessage(ADMIN_CHAT_ID, 'Incorrect format of command. The correct format is: /private on|off.');
+      sendDiagnosticMessage(DiagnosticMessage.INCORRECT_FORMAT_OF_COMMAND, userChatId, { reply_to_message_id: msg.message_id, correct_format: '/private on\\|off' });
       return true;
     }
 
@@ -303,10 +382,8 @@ exports.handleUserChatCommands = function (msg) {
     }
 
   }
-  else {
-    bot.sendMessage(userChatId, "Unknown command.");
-    bot.sendMessage(userChatId, COMMANDS_MESSAGE);
-  }
+  else
+    sendDiagnosticMessage(DiagnosticMessage.UNKNOWN_COMMAND, userChatId, { reply_to_message_id: msg.message_id })
 
   return true;
 }

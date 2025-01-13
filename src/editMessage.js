@@ -1,6 +1,7 @@
-const { ADMIN_CHAT_ID } = require('./constants.js')
-const { getResponderMessage, adminRepliesMessagesA2U, bot, getSenderMessage, userMessagesU2A } = require('./common.js')
-const { showResponderName, doesUserSign, isUserPrivate } = require('./settings.js')
+const { ADMIN_CHAT_ID, bot } = require('./constants.js')
+const { getResponderMessage, adminRepliesMessagesA2U, getSenderMessage, userMessagesU2A } = require('./common.js')
+const { showResponderName, doesUserSign, isUserPrivate } = require('./settings.js');
+const { sendDiagnosticMessage, DiagnosticMessage } = require('./diagnostics.js');
 
 exports.editAdminMessageText = function (msg) {
 
@@ -24,7 +25,7 @@ exports.editAdminMessageText = function (msg) {
   };
 
   bot.editMessageText(text, options);
-  bot.sendMessage(ADMIN_CHAT_ID, 'Edited message text.', { reply_to_message_id: adminChatMsgId })
+  sendDiagnosticMessage(DiagnosticMessage.EDITED_MESSAGE_TEXT, ADMIN_CHAT_ID, { reply_to_message_id: adminChatMsgId });
 
 }
 
@@ -51,7 +52,7 @@ exports.editUserMessageText = function (msg) {
   };
 
   bot.editMessageText(text, options);
-  bot.sendMessage(userChatId, 'Edited message text.', { reply_to_message_id: userMsgId })
+  sendDiagnosticMessage(DiagnosticMessage.EDITED_MESSAGE_TEXT, userChatId, { reply_to_message_id: userMsgId });
 
 }
 
@@ -77,7 +78,7 @@ exports.editAdminMessageCaption = function (msg) {
   }
 
   bot.editMessageCaption(text, options)
-  bot.sendMessage(ADMIN_CHAT_ID, 'Edited message caption.', { reply_to_message_id: adminChatMsgId })
+  sendDiagnosticMessage(DiagnosticMessage.EDITED_MESSAGE_CAPTION, ADMIN_CHAT_ID, { reply_to_message_id: adminChatMsgId });
 
 }
 
@@ -103,8 +104,8 @@ exports.editUserMessageCaption = function (msg) {
     message_id: adminChatMsgId,
   }
 
-  bot.editMessageCaption(text, options)
-  bot.sendMessage(userChatId, 'Edited message caption.', { reply_to_message_id: userChatMsgId })
+  bot.editMessageCaption(text, options);
+  sendDiagnosticMessage(DiagnosticMessage.EDITED_MESSAGE_CAPTION, userChatId, { reply_to_message_id: userChatMsgId });
 
 }
 

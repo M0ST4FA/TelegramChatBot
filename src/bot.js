@@ -1,5 +1,5 @@
-const { ADMIN_CHAT_ID } = require('./constants.js');
-const { bot, adminRepliesMessagesA2U, userMessagesU2A } = require('./common.js');
+const { ADMIN_CHAT_ID, bot } = require('./constants.js');
+const { adminRepliesMessagesA2U, userMessagesU2A } = require('./common.js');
 const { handleUserChatCommands, handleAdminChatCommands } = require('./handleCommands.js');
 const { sendAdminMessage, sendUserMessage } = require('./handleReplies.js');
 const { editAdminMessageText, editUserMessageText, editAdminMessageCaption: editMessageCaption, editUserMessageCaption, editAdminMessageCaption } = require('./editMessage.js');
@@ -63,6 +63,7 @@ bot.on('edited_message_text', async (msg) => {
 
     if (msg.text)
       editAdminMessageText(msg);
+
   } else {
 
     // If the bot doesn't know about this message

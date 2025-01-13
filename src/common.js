@@ -1,8 +1,5 @@
-const TelegramBot = require('node-telegram-bot-api');
-const { ADMIN_CHAT_ID, TOKEN } = require('./constants.js');
-const { addToBannedChats, isChatBanned, removeFromBannedChats, isUserPrivate, doesUserSign } = require('./settings.js')
+const { doesUserSign } = require('./settings.js');
 
-exports.bot = new TelegramBot(TOKEN, { polling: true });
 exports.forwardedMessagesA2U = new Map();
 exports.adminRepliesMessagesA2U = new Map();
 exports.userMessagesU2A = new Map();
@@ -64,46 +61,4 @@ exports.getSenderMessage = function (msg, markdown = true) {
     senderMsg = `${fullName} (${username}:${userId})`;
 
   return senderMsg;
-}
-
-exports.banChat = async function (chatId) {
-
-  if (isChatBanned(chatId)) {
-    exports.bot.sendMessage(ADMIN_CHAT_ID, `User is already banned. To unban user, type /unban ${chatId}.`);
-    return;
-  }
-
-  const chatMember = await exports.bot.getChatMember(chatId, chatId);
-  const user = chatMember.user;
-  const username = exports.getUserNameFromUser(user);
-  const userFullName = exports.getFullNameFromUser(user);
-
-  addToBannedChats(chatId);
-  exports.bot.sendMessage(chatId, "You've been banned from the bot.");
-
-  if (isUserPrivate(user))
-    exports.bot.sendMessage(ADMIN_CHAT_ID, `The user with ID ${chatId} has been banned from the bot.`);
-  else
-    exports.bot.sendMessage(ADMIN_CHAT_ID, `${userFullName} (${username}:${chatId}) has been banned from the bot.`);
-}
-
-exports.unbanChat = async function (chatId) {
-  if (!isChatBanned(chatId)) {
-    exports.bot.sendMessage(ADMIN_CHAT_ID, `User is already not banned. To ban user, type /ban ${chatId}.`);
-    return;
-  }
-
-  const chatMember = await exports.bot.getChatMember(chatId, chatId);
-  const user = chatMember.user;
-  const username = exports.getUserNameFromUser(user);
-  const userFullName = exports.getFullNameFromUser(user);
-
-  removeFromBannedChats(chatId);
-  exports.bot.sendMessage(chatId, "You're no longer banned from the bot.");
-
-  if (isUserPrivate(user))
-    exports.bot.sendMessage(ADMIN_CHAT_ID, `The user with ID ${chatId} has been removed from the banned list.`);
-  else
-    exports.bot.sendMessage(ADMIN_CHAT_ID, `${userFullName} (${username}:${chatId}) has been removed from the banned list.`);
-
 }
