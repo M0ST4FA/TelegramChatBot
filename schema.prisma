@@ -9,22 +9,22 @@ generator client {
 }
 
 model Message {
-  id             Int    @id @default(autoincrement())
-  userChatId     String
-  userMessageId  String    @unique
-  adminMessageId String    @unique
+  id             Int       @id @default(autoincrement())
+  userChatId     BigInt
+  userMessageId  BigInt    @unique
+  adminMessageId BigInt    @unique
   forwarded      Boolean
 }
 
 model Admin {
   id     Int @id @default(autoincrement())
-  userId String @unique
+  userId BigInt @unique
   signs  Boolean @default(true)
 }
 
 model User {
   id      Int @id @default(autoincrement())
-  userId  String @unique
+  userId  BigInt @unique
   private Boolean @default(false)
   banned  Boolean @default(false)
 }

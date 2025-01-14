@@ -1,10 +1,20 @@
 const { prisma } = require("./constants");
 
-async function testConnection() { try { await prisma.$connect(); console.log('Connection to database successful!'); } catch (error) { console.error('Error connecting to the database:', error); } finally { await prisma.$disconnect(); } } testConnection();
+async function testConnection() {
+  try {
+    await prisma.$connect();
+    console.log('Connection to database successful!');
+  } catch (error) {
+    console.error('Error connecting to the database:', error);
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+testConnection();
 
 // SIGNING
 exports.adminSigns = async function (user) {
-  const sUserId = user.id.toString();
+  const sUserId = user.id;
 
   const userObj = await prisma.admin.findFirst({
     where: {
@@ -19,7 +29,7 @@ exports.adminSigns = async function (user) {
 }
 
 exports.doNotSignMessagesOfAdmin = async function (user) {
-  const sUserId = user.id.toString();
+  const sUserId = user.id;
 
   await prisma.admin.upsert({
     where: {
@@ -37,7 +47,7 @@ exports.doNotSignMessagesOfAdmin = async function (user) {
 }
 
 exports.signMessagesOfAdmin = async function (user) {
-  const sUserId = user.id.toString();
+  const sUserId = user.id;
 
   await prisma.admin.upsert({
     where: {
@@ -124,7 +134,7 @@ exports.disableForwardMode = async function () {
 // PRIVATE MODE
 
 exports.enablePrivateMode = async function (user) {
-  const sUserId = user.id.toString();
+  const sUserId = user.id;
 
   await prisma.user.update({
     where: {
@@ -137,7 +147,7 @@ exports.enablePrivateMode = async function (user) {
 }
 
 exports.disablePrivateMode = async function (user) {
-  const sUserId = user.id.toString();
+  const sUserId = user.id;
 
   await prisma.user.update({
     where: {
@@ -150,7 +160,7 @@ exports.disablePrivateMode = async function (user) {
 }
 
 exports.isUserPrivate = async function (user) {
-  const sUserId = user.id.toString();
+  const sUserId = user.id;
 
   const userObj = await prisma.user.findUnique({
     where: {
@@ -166,7 +176,7 @@ exports.isUserPrivate = async function (user) {
 
 // BANNING
 exports.addToBannedChats = async function (chatId) {
-  const sChatId = chatId.toString();
+  const sChatId = chatId;
 
   await prisma.user.update({
     where: {
@@ -179,7 +189,7 @@ exports.addToBannedChats = async function (chatId) {
 }
 
 exports.removeFromBannedChats = async function (chatId) {
-  const sChatId = chatId.toString();
+  const sChatId = chatId;
 
   await prisma.user.update({
     where: {
@@ -192,7 +202,7 @@ exports.removeFromBannedChats = async function (chatId) {
 }
 
 exports.isChatBanned = async function (chatId) {
-  const sChatId = chatId.toString();
+  const sChatId = chatId;
 
   const userObj = await prisma.user.findFirst({
     where: {
@@ -247,7 +257,6 @@ exports.language = async function () {
     where: {
       key: "language"
     }
-
   })
 
   return obj.value;

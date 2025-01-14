@@ -9,9 +9,9 @@ exports.editAdminMessageText = async function (msg) {
 
   // Create final message text
   let text = msg.text || '';
-  text = escapeMarkdownV2(text);
 
-  const responderMsg = await getResponderMessage(msg); // The function takes into account the state of the user
+  const responderInfo = await getResponderMessage(msg, false); // The function takes into account the state of the user
+  const responderMsg = responderInfo.responderMsg;
 
   text += `\n${responderMsg}`;
   text = text.trim();
@@ -20,9 +20,11 @@ exports.editAdminMessageText = async function (msg) {
   const { userMessageId: userChatMsgId, userChatId } = await getMessage(msg);
 
   const options = {
-    parse_mode: "MarkdownV2",
     chat_id: userChatId,
     message_id: userChatMsgId,
+    entities: responderMsg ? [
+      { type: 'blockquote', offset: text.indexOf(responderMsg), length: responderMsg.length }
+    ] : []
   };
 
   bot.editMessageText(text, options);
@@ -38,9 +40,9 @@ exports.editUserMessageText = async function (msg) {
 
   // Create final message text
   let text = msg.text || '';
-  text = escapeMarkdownV2(text);
 
-  const senderMsg = await getSenderMessage(msg); // The function takes into account the state of the user
+  const senderInfo = await getSenderMessage(msg, false); // The function takes into account the state of the user
+  const senderMsg = senderInfo.senderMsg;
 
   text += `\n${senderMsg}`;
   text = text.trim();
@@ -50,9 +52,11 @@ exports.editUserMessageText = async function (msg) {
   const adminMsgId = message.adminMessageId;
 
   const options = {
-    parse_mode: "MarkdownV2",
     chat_id: ADMIN_CHAT_ID,
     message_id: adminMsgId,
+    entities: senderInfo ? [
+      { type: 'blockquote', offset: text.indexOf(senderMsg), length: senderMsg.length }
+    ] : []
   };
 
   bot.editMessageText(text, options);
@@ -67,9 +71,9 @@ exports.editAdminMessageCaption = async function (msg) {
 
   // Create final message text
   let text = msg.caption || '';
-  text = escapeMarkdownV2(text);
 
-  const responderMsg = await getResponderMessage(msg); // The function takes into account the state of the user
+  const responderInfo = await getResponderMessage(msg, false); // The function takes into account the state of the user
+  const responderMsg = responderInfo.responderMsg;
 
   text += `\n${responderMsg}`;
   text = text.trim();
@@ -78,9 +82,11 @@ exports.editAdminMessageCaption = async function (msg) {
   const { userMessageId: userChatMsgId, userChatId } = await getMessage(msg);
 
   const options = {
-    parse_mode: "MarkdownV2",
     chat_id: userChatId,
     message_id: userChatMsgId,
+    caption_entities: responderMsg ? [
+      { type: 'blockquote', offset: text.indexOf(responderMsg), length: responderMsg.length }
+    ] : []
   }
 
   bot.editMessageCaption(text, options)
@@ -96,9 +102,9 @@ exports.editUserMessageCaption = async function (msg) {
 
   // Create final message text
   let text = msg.caption || '';
-  text = escapeMarkdownV2(text);
 
-  const senderMsg = getSenderMessage(msg);  // The function takes into account the state of the user
+  const senderInfo = await getSenderMessage(msg, false);  // The function takes into account the state of the user
+  const senderMsg = senderInfo.senderMsg;
 
   text += `\n${senderMsg}`;
   text = text.trim();
@@ -108,9 +114,11 @@ exports.editUserMessageCaption = async function (msg) {
   const adminMsgId = message.adminMessageId;
 
   const options = {
-    parse_mode: "MarkdownV2",
     chat_id: ADMIN_CHAT_ID,
     message_id: adminMsgId,
+    caption_entities: senderInfo ? [
+      { type: 'blockquote', offset: text.indexOf(senderMsg), length: senderMsg.length }
+    ] : []
   }
 
   bot.editMessageCaption(text, options);

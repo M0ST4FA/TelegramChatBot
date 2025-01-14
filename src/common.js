@@ -2,7 +2,7 @@ const { prisma, ADMIN_CHAT_ID } = require('./constants.js');
 const { adminSigns, isUserPrivate } = require('./settings.js');
 
 exports.addUser = async function (user) {
-  const sUserId = user.id.toString();
+  const sUserId = user.id;
 
   console.log(user);
 
@@ -14,7 +14,7 @@ exports.addUser = async function (user) {
 }
 
 exports.addAdmin = async function (admin) {
-  const sUserId = admin.id.toString();
+  const sUserId = admin.id;
 
   return await prisma.admin.create({
     data: {
@@ -25,7 +25,7 @@ exports.addAdmin = async function (admin) {
 }
 
 exports.getUser = async function (userId) {
-  const sUserId = userId.toString();
+  const sUserId = BigInt(userId)
 
   return await prisma.user.findFirst({
     where: {
@@ -35,7 +35,7 @@ exports.getUser = async function (userId) {
 }
 
 exports.getAdmin = async function (userId) {
-  const sUserId = userId.toString();
+  const sUserId = BigInt(userId)
 
   return await prisma.admin.findFirst({
     where: {
@@ -45,9 +45,9 @@ exports.getAdmin = async function (userId) {
 }
 
 exports.addUserMessage = async function (userChatId, userMsgId, adminMsgId) {
-  const sUserChatId = userChatId.toString();
-  const sUserMessageId = userMsgId.toString();
-  const sAdminMessageId = adminMsgId.toString();
+  const sUserChatId = BigInt(userChatId)
+  const sUserMessageId = BigInt(userMsgId)
+  const sAdminMessageId = BigInt(adminMsgId)
 
   await prisma.message.create({
     data: {
@@ -60,9 +60,9 @@ exports.addUserMessage = async function (userChatId, userMsgId, adminMsgId) {
 }
 
 exports.addAdminMessage = async function (userChatId, userMsgId, adminMsgId) {
-  const sUserChatId = userChatId.toString();
-  const sUserMessageId = userMsgId.toString();
-  const sAdminMessageId = adminMsgId.toString();
+  const sUserChatId = BigInt(userChatId)
+  const sUserMessageId = BigInt(userMsgId)
+  const sAdminMessageId = BigInt(adminMsgId)
 
   await prisma.message.create({
     data: {
@@ -75,8 +75,8 @@ exports.addAdminMessage = async function (userChatId, userMsgId, adminMsgId) {
 }
 
 exports.isMessageSentByUser = async function (msg) {
-  const sMessageId = msg.message_id.toString();
-  const sChatId = msg.chat.id.toString();
+  const sMessageId = BigInt(msg.message_id);
+  const sChatId = BigInt(msg.chat.id);
   let message;
 
   if (msg.chat.id == ADMIN_CHAT_ID)
@@ -112,8 +112,8 @@ exports.isMessageSentByUser = async function (msg) {
 }
 
 exports.isMessageSentByAdmin = async function (msg) {
-  const sMessageId = msg.message_id.toString();
-  const sChatId = msg.chat.id.toString();
+  const sMessageId = BigInt(msg.message_id);
+  const sChatId = BigInt(msg.chat.id);
   let message;
 
   if (msg.chat.id == ADMIN_CHAT_ID)
@@ -149,8 +149,8 @@ exports.isMessageSentByAdmin = async function (msg) {
 }
 
 exports.getMessage = async function (msg) {
-  const sMessageId = msg.message_id.toString();
-  const sChatId = msg.chat.id.toString();
+  const sMessageId = BigInt(msg.message_id);
+  const sChatId = BigInt(msg.chat.id);
 
   if (msg.chat.id == ADMIN_CHAT_ID)
     return await prisma.message.findFirst({
@@ -171,7 +171,7 @@ exports.getMessage = async function (msg) {
 }
 
 exports.getUserMessage = async function (adminMsgId) {
-  const sMessageId = adminMsgId.toString();
+  const sMessageId = BigInt(adminMsgId)
 
   return await prisma.message.findFirst({
     where: {
@@ -184,8 +184,8 @@ exports.getUserMessage = async function (adminMsgId) {
 }
 
 exports.getAdminMessage = async function (chatId, userMsgId) {
-  const sMessageId = userMsgId.toString();
-  const sChatId = chatId.toString();
+  const sMessageId = BigInt(userMsgId)
+  const sChatId = BigInt(chatId)
 
   return await prisma.message.findFirst({
     where: {
@@ -203,8 +203,8 @@ exports.getAdminMessage = async function (chatId, userMsgId) {
 }
 
 exports.getMessageFromUserChat = async function (chatId, userMsgId) {
-  const sMessageId = userMsgId.toString();
-  const sChatId = chatId.toString();
+  const sMessageId = BigInt(userMsgId)
+  const sChatId = BigInt(chatId)
 
   return await prisma.message.findFirst({
     where: {
@@ -235,38 +235,38 @@ exports.getFullNameFromUser = function (user) {
 
 exports.getResponderMessage = async function (msg, markdown = true) {
 
-  let responderMsg = '';
-
   if (!(await adminSigns(msg.from)))
-    return responderMsg;
+    return '';
 
   const fullName = exports.getFullNameFromUser(msg.from);
 
   if (markdown)
-    responderMsg = `>${fullName}`;
+    return `>${fullName}`;
   else
-    responderMsg = `${fullName}`;
-
-  return responderMsg;
+    return {
+      responderMsg: `${fullName}`,
+      fullName,
+    }
 }
 
 exports.getSenderMessage = async function (msg, markdown = true) {
 
-  let senderMsg = '';
-
   if (await isUserPrivate(msg.from))
-    return senderMsg;
+    return '';
 
   const fullName = exports.getFullNameFromUser(msg.from);
   const username = exports.getUserNameFromUser(msg.from);
   const userId = msg.from.id;
 
   if (markdown)
-    senderMsg = `>${fullName} \\(${username}:${userId}\\)`
+    return `>${fullName} \\(${username}:${userId}\\)`
   else
-    senderMsg = `${fullName} (${username}:${userId})`;
-
-  return senderMsg;
+    return {
+      senderMsg: `${fullName} (${username}:${userId})`,
+      fullName,
+      username,
+      userId
+    }
 }
 
 exports.escapeMarkdownV2 = function (text) {

@@ -1,5 +1,6 @@
 const { getResponderMessage, getFullNameFromUser, getSenderMessage, addAdminMessage, addUserMessage, isMessageSentByUser, getUserMessage, getMessageFromUserChat, escapeMarkdownV2 } = require('./common.js');
 const { ADMIN_CHAT_ID, bot } = require('./constants.js');
+const { editUserMessageCaption } = require('./editMessage.js');
 const { handleAdminChatReplyCommands } = require('./handleCommands.js');
 const { forwardMode, isUserPrivate, adminSigns, repliesAreShown } = require('./settings.js');
 
@@ -23,9 +24,10 @@ const sendAdminMessageToUserChat = async function (msg) {
   const caption = msg.caption || '';
   let text = msg.text || '';
   text += caption;
-  text = escapeMarkdownV2(text);
 
-  const responderMsg = await getResponderMessage(msg); // The function takes into account the state of the user
+  const responderInfo = await getResponderMessage(msg, false); // The function takes into account the state of the user
+
+  const responderMsg = responderInfo.responderMsg;
 
   text += `\n${responderMsg}`;
   text = text.trim();
@@ -35,12 +37,16 @@ const sendAdminMessageToUserChat = async function (msg) {
   const replyToMessageIdOption = {
     reply_to_message_id: await repliesAreShown() ? messageIdInUserChat : undefined
   }
+
   const captionOption = {
-    parse_mode: "MarkdownV2",
-    caption: responderMsg ? text : undefined, // responderMsg determines whether admin signs or not
+    caption: responderInfo ? text : undefined, // senderMessage determines whether or not user signs
+    caption_entities: responderMsg ? [
+      { type: 'blockquote', offset: text.indexOf(responderMsg), length: responderMsg.length }
+    ] : []
   }
+
   const responderMessageOption = {
-    parse_mode: "MarkdownV2"
+    entities: captionOption.caption_entities
   }
 
   if (!userChatId)
@@ -55,19 +61,12 @@ const sendAdminMessageToUserChat = async function (msg) {
     adminSentMsgInUserChat = bot.sendMessage(userChatId, text, options);
   } else if (msg.photo?.length > 0) {
 
-    const options = {
-      ...replyToMessageIdOption,
-      ...captionOption
-    }
-
+    const options = replyToMessageIdOption;
     // Send the photo
     adminSentMsgInUserChat = bot.sendPhoto(userChatId, msg.photo.at(0).file_id, options);
   } else if (msg.video) {
 
-    const options = {
-      ...replyToMessageIdOption,
-      ...captionOption
-    }
+    const options = replyToMessageIdOption;
 
     // Send the video
     adminSentMsgInUserChat = bot.sendVideo(userChatId, msg.video.file_id, options);
@@ -79,26 +78,19 @@ const sendAdminMessageToUserChat = async function (msg) {
     adminSentMsgInUserChat = bot.sendSticker(userChatId, msg.sticker.file_id, options);
   } else if (msg.document) {
 
-    const options = {
-      ...replyToMessageIdOption,
-      ...captionOption
-    }
+    const options = replyToMessageIdOption;
 
     // Send the document
     adminSentMsgInUserChat = bot.sendDocument(userChatId, msg.document.file_id, options);
   } else if (msg.audio) {
-    const options = {
-      ...replyToMessageIdOption,
-      ...captionOption
-    }
+
+    const options = replyToMessageIdOption;
 
     // Send the audio
     adminSentMsgInUserChat = bot.sendAudio(userChatId, msg.audio.file_id, options);
   } else if (msg.voice) {
-    const options = {
-      ...replyToMessageIdOption,
-      ...captionOption
-    }
+
+    const options = replyToMessageIdOption;
 
     // Send the audio
     adminSentMsgInUserChat = bot.sendAudio(userChatId, msg.voice.file_id, options);
@@ -131,6 +123,14 @@ const sendAdminMessageToUserChat = async function (msg) {
   const adminMsgId = msg.message_id;
   const userMsgId = userChatMsg.message_id;
   addAdminMessage(userChatId, userMsgId, adminMsgId)
+
+  if (!msg.text && !msg.location && !msg.contact && !msg.sticker) {
+    bot.editMessageCaption(text, {
+      chat_id: userChatId,
+      message_id: userMsgId,
+      ...captionOption
+    });
+  }
 
   return true;
 }
@@ -192,9 +192,10 @@ const sendUserMessageToAdminChat = async function (msg) {
   const caption = msg.caption || '';
   let text = msg.text || '';
   text += caption;
-  text = escapeMarkdownV2(text);
 
-  let senderMessage = await getSenderMessage(msg); // The function takes into account the state of the user
+  const senderInfo = await getSenderMessage(msg, false); // The function takes into account the state of the user
+
+  const senderMessage = senderInfo?.senderMsg || '';
 
   text += '\n' + senderMessage;
   text = text.trim();
@@ -209,17 +210,20 @@ const sendUserMessageToAdminChat = async function (msg) {
     const message = await getMessageFromUserChat(userChatId, replyToUserMessageId);
 
     console.log(msg);
+    console.log(message);
 
     replyToMessageIdOption.reply_to_message_id = message.adminMessageId;
   }
 
   const captionOption = {
-    parse_mode: "MarkdownV2",
-    caption: senderMessage ? text : undefined // senderMessage determines whether or not user signs
+    caption: senderInfo ? text : undefined, // senderMessage determines whether or not user signs
+    caption_entities: senderInfo ? [
+      { type: 'blockquote', offset: text.indexOf(senderMessage), length: senderMessage.length }
+    ] : []
   }
 
   const senderMessageOption = {
-    parse_mode: "MarkdownV2"
+    entities: captionOption.caption_entities
   }
 
   let userSentMsgInAdminChat;
@@ -235,20 +239,14 @@ const sendUserMessageToAdminChat = async function (msg) {
 
   } else if (msg.photo?.length > 0) {
 
-    const options = {
-      ...replyToMessageIdOption,
-      ...captionOption
-    }
+    const options = replyToMessageIdOption;
 
     // Send the photo
     userSentMsgInAdminChat = bot.sendPhoto(ADMIN_CHAT_ID, msg.photo.at(0).file_id, options);
 
   } else if (msg.video) {
 
-    const options = {
-      ...replyToMessageIdOption,
-      ...captionOption
-    }
+    const options = replyToMessageIdOption;
 
     // Send the video
     userSentMsgInAdminChat = bot.sendVideo(ADMIN_CHAT_ID, msg.video.file_id, options);
@@ -261,28 +259,19 @@ const sendUserMessageToAdminChat = async function (msg) {
     userSentMsgInAdminChat = bot.sendSticker(ADMIN_CHAT_ID, msg.sticker.file_id, options);
   } else if (msg.document) {
 
-    const options = {
-      ...replyToMessageIdOption,
-      ...captionOption
-    }
+    const options = replyToMessageIdOption;
 
     // Send the document
     userSentMsgInAdminChat = bot.sendDocument(ADMIN_CHAT_ID, msg.document.file_id, options);
   } else if (msg.audio) {
 
-    const options = {
-      ...replyToMessageIdOption,
-      ...captionOption
-    }
+    const options = replyToMessageIdOption;
 
     // Send the audio
     userSentMsgInAdminChat = bot.sendAudio(ADMIN_CHAT_ID, msg.audio.file_id, options);
   } else if (msg.voice) {
 
-    const options = {
-      ...replyToMessageIdOption,
-      ...captionOption
-    }
+    const options = replyToMessageIdOption;
 
     // Send the audio
     userSentMsgInAdminChat = bot.sendAudio(ADMIN_CHAT_ID, msg.voice.file_id, options);
@@ -312,16 +301,19 @@ const sendUserMessageToAdminChat = async function (msg) {
     bot.sendMessage(userChatId, "🔴 Unknown message type.");
   }
 
-  console.log(msg);
-  console.log(text);
-
   const adminChatMsg = await userSentMsgInAdminChat;
   const adminChatMsgId = adminChatMsg.message_id;
   const userChatMsgId = messageIdInUserChat;
 
-  console.log(adminChatMsg);
-
   addUserMessage(userChatId, userChatMsgId, adminChatMsgId)
+
+  if (!msg.text && !msg.location && !msg.contact && !msg.sticker) {
+    bot.editMessageCaption(text, {
+      chat_id: ADMIN_CHAT_ID,
+      message_id: adminChatMsgId,
+      ...captionOption
+    });
+  }
 
 }
 

@@ -170,8 +170,6 @@ exports.handleAdminChatCommands = async function handleCommands(msg) {
   } else if (msgText == '/bannedUsers') {
     const bndChatIds = await getBannedChatIds();
 
-    console.log(bndChatIds);
-
     if (bndChatIds.length == 0) {
       sendDiagnosticMessage(DiagnosticMessage.NO_BANNED_USERS_EXIST, ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id })
       return true;
@@ -231,11 +229,11 @@ exports.handleAdminChatCommands = async function handleCommands(msg) {
     const languageCode = regexMatch.at(1);
 
     if (languageCode == "ar")
-      setArabicLanguage();
+      await setArabicLanguage();
     else
-      setEnglishLanguage();
+      await setEnglishLanguage();
 
-    sendDiagnosticMessage(DiagnosticMessage.BOT_LANGUAGE_CHANGE_MESSAGE, ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id });
+    await sendDiagnosticMessage(DiagnosticMessage.BOT_LANGUAGE_CHANGE_MESSAGE, ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id });
   }
   else
     sendDiagnosticMessage(DiagnosticMessage.UNKNOWN_COMMAND, ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id });
@@ -288,18 +286,27 @@ exports.handleAdminChatReplyCommands = async function (msg) { // msg must be a r
   else if (text == "ban" || text == "عومر2") {
 
     const message = await mapForwardedMessageToUserChatID(replyToMessage);
-    banChat(message.userChatId, msg.message_id);
+
+    if (Object.entries(message).length > 0)
+      banChat(message.userChatId, msg.message_id);
 
   }
   else if (text == "unban" || text == "إلغاء عومر2") {
 
-    const { userChatId } = await mapForwardedMessageToUserChatID(replyToMessage);
-    unbanChat(userChatId, msg.message_id);
+    const message = await mapForwardedMessageToUserChatID(replyToMessage);
+
+    if (Object.entries(message).length > 0)
+      unbanChat(message.userChatId, msg.message_id);
 
   }
   else if (text == "info" || text == "معلومات") {
 
-    const { userChatId } = await mapForwardedMessageToUserChatID(replyToMessage);
+    const message = await mapForwardedMessageToUserChatID(replyToMessage);
+
+    if (Object.entries(message).length == 0)
+      return;
+
+    const userChatId = message.userChatId;
 
     let username;
     let fullName;
