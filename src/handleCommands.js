@@ -1,6 +1,6 @@
-const { ADMIN_CHAT_ID, USER_WELCOMING_MESSAGE_EN, bot, USER_COMMANDS_MESSAGE_EN } = require('./constants.js');
-const { forwardedMessagesA2U, adminRepliesMessagesA2U, userMessagesU2A, getFullNameFromUser, getUserNameFromUser } = require('./common.js');
-const { isUserPrivate, bannedChats, isChatBanned, doNotSignMessagesOfUser, signMessagesOfUser, hideRepliedToMessages, showRepliedToMessages, disableForwardMode, enableForwardMode, disablePrivateMode, enablePrivateMode, setArabicLanguage, setEnglishLanguage, addToBannedChats, removeFromBannedChats } = require('./settings.js');
+const { ADMIN_CHAT_ID, bot, prisma } = require('./constants.js');
+const { getFullNameFromUser, getUserNameFromUser, getUserMessage, getUser, addUser, getMessage } = require('./common.js');
+const { isUserPrivate, isChatBanned, doNotSignMessagesOfAdmin, signMessagesOfAdmin, disableForwardMode, enableForwardMode, disablePrivateMode, enablePrivateMode, setArabicLanguage, setEnglishLanguage, addToBannedChats, removeFromBannedChats, showReplies, hideReplies, getBannedChatIds } = require('./settings.js');
 const { sendDiagnosticMessage, DiagnosticMessage } = require('./diagnostics.js');
 
 const banChat = async function (chatId, banMsgId) {
@@ -11,7 +11,7 @@ const banChat = async function (chatId, banMsgId) {
   }
 
   // If user is already banned
-  if (isChatBanned(chatId))
+  if (await isChatBanned(chatId))
     return sendDiagnosticMessage(DiagnosticMessage.USER_IS_ALREADY_BANNED, ADMIN_CHAT_ID, options);
 
   // Add the user to the list of banned users
@@ -35,7 +35,7 @@ const unbanChat = async function (chatId, unbanMsgId) {
   }
 
   // If user is already not banned
-  if (!isChatBanned(chatId))
+  if (!(await isChatBanned(chatId)))
     return sendDiagnosticMessage(DiagnosticMessage.USER_IS_ALREADY_NOT_BANNED, ADMIN_CHAT_ID, options);
 
   // Remove the user from the list of banned users
@@ -52,7 +52,38 @@ const unbanChat = async function (chatId, unbanMsgId) {
 
 }
 
-exports.handleAdminChatCommands = function handleCommands(msg) {
+const initializeBot = async function () {
+
+  const initializedObj = await prisma.setting.findFirst({
+    where: {
+      key: 'initialized'
+    }
+  });
+
+  const initialized = initializedObj ? initializedObj.value : false;
+
+  if (initialized) {
+    bot.sendMessage(ADMIN_CHAT_ID, 'Bot is already initialized.');
+    return;
+  }
+
+  const settings = [
+    { key: 'replies', value: JSON.stringify(true) },
+    { key: 'forwardMode', value: JSON.stringify(false) },
+    { key: 'language', value: JSON.stringify('ar') },
+    { key: 'initialized', value: JSON.stringify(true) }
+  ];
+
+  for (const setting of settings)
+    await prisma.setting.create(
+      {
+        data: { key: setting.key, value: setting.value }
+      }
+    );
+
+}
+
+exports.handleAdminChatCommands = async function handleCommands(msg) {
   const msgText = msg.text || '';
 
   if (!msgText)
@@ -62,17 +93,13 @@ exports.handleAdminChatCommands = function handleCommands(msg) {
     return false;
 
   if (msgText == '/log') {
-    const forwardedMessages = JSON.stringify(Object.fromEntries(forwardedMessagesA2U));
-    const adminReplies = JSON.stringify(Object.fromEntries(adminRepliesMessagesA2U));
-    const userMessages = JSON.stringify(Object.fromEntries(userMessagesU2A));
-    console.log(forwardedMessagesA2U);
-    console.log(adminRepliesMessagesA2U)
-    console.log(userMessagesU2A)
-    bot.sendMessage(ADMIN_CHAT_ID, `Forwarded messages from the bot (admin chat to user chat): \n${forwardedMessages}\nAdmin replies to users (admin chat to user chat):\n${adminReplies}\nMessages in user-bot private chat:${userMessages}`);
+    bot.sendMessage(ADMIN_CHAT_ID, `Reimplement this command.`);
     return true;
   }
   else if (msgText == '/commands')
     sendDiagnosticMessage(DiagnosticMessage.ADMIN_COMMANDS_MESSAGE, ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id });
+  else if (msgText == '/init')
+    await initializeBot();
   else if (msgText.startsWith('/sign')) {
     const regexMatch = /\/sign (on|off)/.exec(msgText);
 
@@ -89,10 +116,10 @@ exports.handleAdminChatCommands = function handleCommands(msg) {
     }
 
     if (res == 'off') {
-      doNotSignMessagesOfUser(msg.from);
+      doNotSignMessagesOfAdmin(msg.from);
       sendDiagnosticMessage(DiagnosticMessage.USER_MESSAGES_WILL_NOT_BE_SIGNED_MESSAGE, ADMIN_CHAT_ID, options);
     } else {
-      signMessagesOfUser(msg.from);
+      signMessagesOfAdmin(msg.from);
       sendDiagnosticMessage(DiagnosticMessage.USER_MESSAGES_WILL_BE_SIGNED_MESSAGE, ADMIN_CHAT_ID, options);
     }
 
@@ -111,10 +138,10 @@ exports.handleAdminChatCommands = function handleCommands(msg) {
     }
 
     if (res == 'off') {
-      hideRepliedToMessages();
+      hideReplies();
       sendDiagnosticMessage(DiagnosticMessage.HIDE_REPLIED_TO_MESSAGES_MESSAGE, ADMIN_CHAT_ID, options);
     } else {
-      showRepliedToMessages();
+      showReplies();
       sendDiagnosticMessage(DiagnosticMessage.SHOW_REPLIED_TO_MESSAGES_MESSAGE, ADMIN_CHAT_ID, options);
     }
 
@@ -141,20 +168,22 @@ exports.handleAdminChatCommands = function handleCommands(msg) {
     }
 
   } else if (msgText == '/bannedUsers') {
-    const bannedChatIds = bannedChats();
+    const bndChatIds = await getBannedChatIds();
 
-    if (bannedChatIds.size == 0) {
+    console.log(bndChatIds);
+
+    if (bndChatIds.length == 0) {
       sendDiagnosticMessage(DiagnosticMessage.NO_BANNED_USERS_EXIST, ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id })
       return true;
     }
 
     sendDiagnosticMessage(DiagnosticMessage.DISPLAYING_BANNED_USERS_NOW, ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id })
-    for (const chatId of bannedChatIds) {
+    for (const chatId of bndChatIds) {
       bot.getChatMember(chatId, chatId)
-        .then(member => {
+        .then(async member => {
           const user = member.user;
 
-          if (isUserPrivate(user)) {
+          if (await isUserPrivate(user)) {
             bot.sendMessage(ADMIN_CHAT_ID, `${user.id} [User is in private mode]`);
             return;
           }
@@ -214,19 +243,19 @@ exports.handleAdminChatCommands = function handleCommands(msg) {
   return true;
 }
 
-const mapForwardedMessageToUserChatID = function (msg) {
+const mapForwardedMessageToUserChatID = async function (adminMsg) {
 
-  const userChatDetail = forwardedMessagesA2U.get(msg.message_id);
+  const userMessage = await getUserMessage(adminMsg.message_id);
 
-  if (!userChatDetail) {
-    sendDiagnosticMessage(DiagnosticMessage.MESSAGE_NOT_PRESENT_BOT_DATA_STRUCTURES, ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id });
+  if (!userMessage) {
+    sendDiagnosticMessage(DiagnosticMessage.MESSAGE_NOT_PRESENT_BOT_DATA_STRUCTURES, ADMIN_CHAT_ID, { reply_to_message_id: adminMsg.message_id });
     return {};
   }
 
-  return userChatDetail;
+  return userMessage;
 }
 
-exports.handleAdminChatReplyCommands = function (msg) { // msg must be a reply to another message
+exports.handleAdminChatReplyCommands = async function (msg) { // msg must be a reply to another message
 
   const userCommands = ["delete", "عومر", "ban", "عومر2", "إلغاء عومر2", "unban", "info", "معلومات"];
 
@@ -243,102 +272,92 @@ exports.handleAdminChatReplyCommands = function (msg) { // msg must be a reply t
 
   if (text == "delete" || text == "عومر") {
 
-    if (adminRepliesMessagesA2U.size == 0)
-      return false;
+    const message = await getMessage(replyToMessage);
 
-    const replyDetails = adminRepliesMessagesA2U.get(replyToMessageId);
-
-    if (!replyDetails) {
+    if (!message) {
       sendDiagnosticMessage(DiagnosticMessage.MESSAGE_NOT_PRESENT_BOT_DATA_STRUCTURES, ADMIN_CHAT_ID, { reply_to_message_id: replyToMessageId })
-      return false;
+      return true;
     }
 
-    const { chatId, messageId } = replyDetails;
+    const { userChatId, userMessageId } = message;
 
-    bot.deleteMessage(chatId, messageId);
+    bot.deleteMessage(userChatId, userMessageId);
     sendDiagnosticMessage(DiagnosticMessage.DELETED_MESSAGE, ADMIN_CHAT_ID, { reply_to_message_id: replyToMessageId })
 
   }
   else if (text == "ban" || text == "عومر2") {
 
-    const { chatId: userChatId } = mapForwardedMessageToUserChatID(replyToMessage);
-    banChat(userChatId, msg.message_id);
+    const message = await mapForwardedMessageToUserChatID(replyToMessage);
+    banChat(message.userChatId, msg.message_id);
 
   }
   else if (text == "unban" || text == "إلغاء عومر2") {
 
-    const { chatId: userChatId } = mapForwardedMessageToUserChatID(replyToMessage);
+    const { userChatId } = await mapForwardedMessageToUserChatID(replyToMessage);
     unbanChat(userChatId, msg.message_id);
 
   }
   else if (text == "info" || text == "معلومات") {
 
-    const { chatId: userChatId } = mapForwardedMessageToUserChatID(replyToMessage);
+    const { userChatId } = await mapForwardedMessageToUserChatID(replyToMessage);
 
     let username;
     let fullName;
-    let id;
 
-    bot.getChatMember(userChatId, userChatId)
-      .then(function (member) {
-        const user = member.user;
-        const isInPrivateMode = isUserPrivate(user);
-        id = user.id;
+    const member = await bot.getChatMember(userChatId, userChatId);
+    const user = member.user;
+    const isInPrivateMode = await isUserPrivate(user);
+    const id = user.id;
+    const isUserBanned = await isChatBanned(id);
 
-        if (isInPrivateMode) {
-          const userInfo = `
-          ✳️ User Information: [User is in private mode]
-          🪪 User ID: ${id}
-          ⛔ Status: ${isChatBanned(id) ? 'Banned' : 'Not banned'}
-          `.trim();
+    if (isInPrivateMode) {
+      const userInfo = `
+      ✳️ User Information: [User is in private mode]
+      🪪 User ID: ${id}
+      ⛔ Status: ${isUserBanned ? 'Banned' : 'Not banned'}
+      `.trim();
 
-          bot.sendMessage(ADMIN_CHAT_ID, userInfo);
-          return undefined;
-        }
+      bot.sendMessage(ADMIN_CHAT_ID, userInfo);
+      return undefined;
+    }
 
-        username = getUserNameFromUser(user);
-        fullName = getFullNameFromUser(user);
+    username = getUserNameFromUser(user);
+    fullName = getFullNameFromUser(user);
 
-        return bot.getUserProfilePhotos(userChatId)
-      })
-      .then(photos => {
+    const photos = await bot.getUserProfilePhotos(userChatId);
 
-        if (!photos) // This means that we're in private mode
-          return;
-
-        const userInfo = `
+    const userInfo = `
         ✳️ User Information:
         👤 Full Name: ${fullName}
         👤 Username: ${username}
         🪪 User ID: ${id}
-        ⛔ Status: ${isChatBanned(id) ? 'Banned' : 'Not banned'}
+        ⛔ Status: ${isUserBanned ? 'Banned' : 'Not banned'}
         `.trim();
 
-        if (photos.total_count == 0) {
-          const options = {
-            reply_to_message_id: msg.message_id,
-            entities: [{ type: "mention", offset: userInfo.indexOf(username), length: username.length }]
-          }
+    if (photos.total_count == 0) {
+      const options = {
+        reply_to_message_id: msg.message_id,
+        entities: [{ type: "mention", offset: userInfo.indexOf(username), length: username.length }]
+      }
 
-          bot.sendMessage(ADMIN_CHAT_ID, userInfo, options)
-          return;
-        }
+      bot.sendMessage(ADMIN_CHAT_ID, userInfo, options)
+      return;
+    }
 
-        const photo = photos.photos.at(0).at(0);
+    const photo = photos.photos.at(0).at(0);
 
-        bot.sendPhoto(ADMIN_CHAT_ID, photo.file_id, {
-          reply_to_message_id: msg.message_id,
-          caption: userInfo,
-          caption_entities: [{ type: "mention", offset: userInfo.indexOf(username), length: username.length }]
-        });
-      });
+    bot.sendPhoto(ADMIN_CHAT_ID, photo.file_id, {
+      reply_to_message_id: msg.message_id,
+      caption: userInfo,
+      caption_entities: [{ type: "mention", offset: userInfo.indexOf(username), length: username.length }]
+    });
 
   }
 
   return true;
 }
 
-exports.handleUserChatCommands = function (msg) {
+exports.handleUserChatCommands = async function (msg) {
 
   const msgText = msg.text || '';
   const userChatId = msg.chat.id;
@@ -356,10 +375,12 @@ exports.handleUserChatCommands = function (msg) {
   if (msgText == '/commands')
     sendDiagnosticMessage(DiagnosticMessage.USER_COMMANDS_MESSAGE, userChatId, options);
   else if (msgText == '/start') {
-    if (userMessagesU2A.has(userChatId)) // If the user has already /start ed the chat
+    if (await getUser(msg.from.id)) // If the user has already /start ed the chat
       sendDiagnosticMessage(DiagnosticMessage.USER_CHAT_HAS_ALREADY_STARTED, userChatId, options);
-    else
+    else {
+      await addUser(msg.from);
       sendDiagnosticMessage(DiagnosticMessage.USER_WELCOMING_MESSAGE, userChatId, options);
+    }
 
     return true;
   }

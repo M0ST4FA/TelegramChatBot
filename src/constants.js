@@ -1,13 +1,19 @@
 const TelegramBot = require('node-telegram-bot-api');
+const { PrismaClient } = require('@prisma/client');
 
 exports.BOT_NAME = process.env.BOT_NAME;
 exports.BOT_TOKEN = process.env.BOT_TOKEN;
 exports.bot = new TelegramBot(exports.BOT_TOKEN, { polling: true });
 exports.ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID; // Replace with the chat ID you want to forward messages to
+
+exports.prisma = new PrismaClient();
+
+// ADMIN COMMANDS
 exports.ADMIN_COMMANDS_MESSAGE_EN =
       `✳️ Commands supported by the bot:
 🤖 /commands Shows this message\\.
 🤖 /log Prints debugging information for developers\\.
+🤖 /init Initializes the bot\\. This must be used the first time the bot is used within an admin chat\\.
 🤖 /sign on\\|off Toggles showing the name of the responder from the admin chat to the user\\.
 🤖 /replies on\\|off Toggles showing the message that admins have replied to to the user\\.
 🤖 /forwarding on\\|off Toggles forwarding user messages or sending them without forwarding\\.
@@ -23,6 +29,8 @@ exports.ADMIN_COMMANDS_MESSAGE_AR =
 عرض هذه الرسالة\\.
 🤖 /log 
 طباعة معلومات التصحيح للمطورين\\.
+🤖 /init
+تهيئة البوت\\. هذا الأمر يجب أن يستخدم في شات المشرفين في المرة الأولي التي يتم فيها استخدام البوت\\.
 🤖 /sign on\\|off 
 تشغيل أو إيقاف توقيع رسائل المشرف\\.
 🤖 /replies on\\|off 
@@ -40,6 +48,7 @@ exports.ADMIN_COMMANDS_MESSAGE_AR =
 🤖 /language ar\\|en
 تحويل لغة البوت إلي العربية \\(ar\\) أو الإنجليزية \\(en\\)\\.`;
 
+// USER COMMANDS
 exports.USER_COMMANDS_MESSAGE_EN =
       `✳️ Commands supported by the bot:
 🤖 /commands Shows this message\\.
@@ -52,6 +61,7 @@ exports.USER_COMMANDS_MESSAGE_AR =
 🤖 /private on\\|off
 تشغيل أو إيقاف الوضع الخاص\\. في هذا الوضع, اسمك و معلومات حسابك لا تظهر للمشرفين\\.`;
 
+// WELCOMING MESSAGE
 exports.USER_WELCOMING_MESSAGE_EN =
       `✳️ Welcome to ${exports.BOT_NAME}\\!
 ✳️ You can send us any message you want and hopefully we will respond ASAP\\. 

@@ -1,0 +1,36 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Message {
+  id             Int    @id @default(autoincrement())
+  userChatId     String
+  userMessageId  String    @unique
+  adminMessageId String    @unique
+  forwarded      Boolean
+}
+
+model Admin {
+  id     Int @id @default(autoincrement())
+  userId String @unique
+  signs  Boolean @default(true)
+}
+
+model User {
+  id      Int @id @default(autoincrement())
+  userId  String @unique
+  private Boolean @default(false)
+  banned  Boolean @default(false)
+}
+
+model Setting {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value String
+}

@@ -7,13 +7,18 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node ./src/bot.js",
+    "start-local": "node --env-file=botconfig.env ./src/bot.js",
     "install": "",
     "build": ""
   },
   "author": "M0sT4fa",
   "license": "MIT",
   "dependencies": {
+    "@prisma/client": "^6.2.1",
     "docreaderbot": "file:",
     "node-telegram-bot-api": "^0.66.0"
+  },
+  "devDependencies": {
+    "prisma": "^6.2.1"
   }
 }

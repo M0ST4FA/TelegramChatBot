@@ -31,7 +31,7 @@ exports.DiagnosticMessage = Object.freeze({
   USER_WELCOMING_MESSAGE: 25,
   USER_CHAT_HAS_ALREADY_STARTED: 26
 })
-exports.sendDiagnosticMessage = function (messageType, chatId, opts = {}) {
+exports.sendDiagnosticMessage = async function (messageType, chatId, opts = {}) {
 
   const botSenderMsg = `>${BOT_NAME}`;
   const options = {
@@ -46,7 +46,7 @@ exports.sendDiagnosticMessage = function (messageType, chatId, opts = {}) {
   let userId = 0;
 
   if (user) {
-    userIsPrivate = isUserPrivate(user);
+    userIsPrivate = await isUserPrivate(user);
     username = getUserNameFromUser(user);
     userFullName = getFullNameFromUser(user);
     userId = user.id;
@@ -56,49 +56,49 @@ exports.sendDiagnosticMessage = function (messageType, chatId, opts = {}) {
 
   switch (messageType) {
     case DiagnosticMessage.DELETED_MESSAGE:
-      if (language() == "ar")
+      if (await language() == "ar")
         bot.sendMessage(chatId, `تم مسح الرسالة\\.\n${botSenderMsg}`, options);
       else
         bot.sendMessage(chatId, `Deleted message\\.\n${botSenderMsg}`, options);
       break;
     case DiagnosticMessage.EDITED_MESSAGE_TEXT:
-      if (language() == "ar")
+      if (await language() == "ar")
         bot.sendMessage(chatId, `تم تعديل نص الرسالة\\.\n${botSenderMsg}`, options);
       else
         bot.sendMessage(chatId, `Edited message text\\.\n${botSenderMsg}`, options);
       break;
     case DiagnosticMessage.EDITED_MESSAGE_CAPTION:
-      if (language() == "ar")
+      if (await language() == "ar")
         bot.sendMessage(chatId, `تم تعديل تعليق الرسالة\\.\n${botSenderMsg}`, options);
       else
         bot.sendMessage(chatId, `Edited message caption\\.\n${botSenderMsg}`, options);
       break;
     case DiagnosticMessage.INCORRECT_FORMAT_OF_COMMAND:
-      if (language() == "ar")
+      if (await language() == "ar")
         bot.sendMessage(chatId, `تركيب الأمر خاطئ\\. التركيب الصحيح هو:\n${opts.correct_format}\n${botSenderMsg}`, options);
       else
         bot.sendMessage(chatId, `Incorrect format of command\\. The correct format is: ${opts.correct_format}\n${botSenderMsg}`, options);
       break;
     case DiagnosticMessage.NO_BANNED_USERS_EXIST:
-      if (language() == "ar")
+      if (await language() == "ar")
         bot.sendMessage(chatId, `لا يوجد مستخدمون محظورون\\.\n${botSenderMsg}`, options);
       else
         bot.sendMessage(chatId, `No banned users exist\\.\n${botSenderMsg}`, options);
       break;
     case DiagnosticMessage.DISPLAYING_BANNED_USERS_NOW:
-      if (language() == "ar")
+      if (await language() == "ar")
         bot.sendMessage(chatId, `المستخدمون المحظورون:\n${botSenderMsg}`, options);
       else
         bot.sendMessage(chatId, `Banned users are:\n${botSenderMsg}`, options);
       break;
     case DiagnosticMessage.USER_BANNING_MESSAGE:
-      if (language() == "ar")
+      if (await language() == "ar")
         bot.sendMessage(chatId, `لقد تم حظرك من البوت\\.\n${botSenderMsg}`, options);
       else
         bot.sendMessage(chatId, `You've been banned from the bot.\n${botSenderMsg}`, options);
       break;
     case DiagnosticMessage.ADMIN_BANNING_MESSAGE:
-      if (language() == "ar")
+      if (await language() == "ar")
         if (userIsPrivate)
           bot.sendMessage(chatId, `لقد تم حظر المستخدم الذي يحمل المعرف \\(${userId}\\) من البوت\\.\n${botSenderMsg}`, options);
         else
@@ -110,13 +110,13 @@ exports.sendDiagnosticMessage = function (messageType, chatId, opts = {}) {
           bot.sendMessage(chatId, `The user ${userFullName} \\(${username}:${userId}\\) has been banned from the bot\\.\n${botSenderMsg}`, options);
       break;
     case DiagnosticMessage.USER_NO_LONGER_BANNED_MESSAGE:
-      if (language() == "ar")
+      if (await language() == "ar")
         bot.sendMessage(chatId, `أنت لم تعد محظورا من البوت\\.\n${botSenderMsg}`, options);
       else
         bot.sendMessage(chatId, `You're no longer banned from the bot\\.\n${botSenderMsg}`, options);
       break;
     case DiagnosticMessage.ADMIN_USER_NO_LONGER_BANNED_MESSAGE:
-      if (language() == "ar")
+      if (await language() == "ar")
         if (userIsPrivate)
           bot.sendMessage(chatId, `لقد تمت إزالة المستخدم الذي يحمل المعرف \\(${userId}\\) قائمة الحظر\\.\n${botSenderMsg}`, options);
         else
@@ -128,50 +128,50 @@ exports.sendDiagnosticMessage = function (messageType, chatId, opts = {}) {
           bot.sendMessage(chatId, `The user ${userFullName} \\(${username}:${userId}\\) has been removed from the banned list\\.\n${botSenderMsg}`, options);
       break;
     case DiagnosticMessage.USER_IS_ALREADY_BANNED:
-      if (language() == "ar")
+      if (await language() == "ar")
         bot.sendMessage(chatId, `المسختدم محظورٌ بالفعل\\. لإزالة الحظر, استخدم الأمر:\n/unban ${userId}\\.\n${botSenderMsg}`, options);
       else
         bot.sendMessage(chatId, `The user is already banned\\. To remove the ban, type\n/unban ${userId}\\.\n${botSenderMsg}`, options);
       break;
     case DiagnosticMessage.USER_IS_ALREADY_NOT_BANNED:
-      if (language() == "ar")
+      if (await language() == "ar")
         bot.sendMessage(chatId, `المسختدم ليس محظورًا بالفعل\\. لحظر المستخدم, استخدم الأمر:\n/ban ${userId}\\.\n${botSenderMsg}`, options);
       else
         bot.sendMessage(chatId, `The user is already not banned\\. To ban them, type\n/ban ${userId}\\.\n${botSenderMsg}`, options);
       break;
     case DiagnosticMessage.MESSAGE_NOT_PRESENT_BOT_DATA_STRUCTURES:
-      if (language() == "ar")
+      if (await language() == "ar")
         bot.sendMessage(chatId, `الرسالة ليست موجودة في قاعدة بيانات البوت\\.\n${botSenderMsg}`, options);
       else
         bot.sendMessage(chatId, `Message is not present in bot data structures\\.\n${botSenderMsg}`, options);
       break;
     case DiagnosticMessage.USER_INFO_MESSAGE:
     case DiagnosticMessage.BOT_LANGUAGE_CHANGE_MESSAGE:
-      if (language() == "ar")
+      if (await language() == "ar")
         bot.sendMessage(chatId, `تم ضبط لغة البوت إلي العربية\\.\n${botSenderMsg}`, options);
       else
         bot.sendMessage(chatId, `The language of the bot has been set to English\\.\n${botSenderMsg}`, options);
       break;
     case DiagnosticMessage.BOT_LANGUAGE_MESSAGE:
-      if (language() == "ar")
+      if (await language() == "ar")
         bot.sendMessage(chatId, `لغة البوت هي العربية\\. لتغيير اللغة, استخدم الأمر\n/language ar\\|en\n${botSenderMsg}`, options);
       else
         bot.sendMessage(chatId, `The language of the bot is English\\. To change language, use the command /language ar\\|en\n${botSenderMsg}`, options);
       break;
     case DiagnosticMessage.ADMIN_COMMANDS_MESSAGE:
-      if (language() == "ar")
+      if (await language() == "ar")
         bot.sendMessage(chatId, `${ADMIN_COMMANDS_MESSAGE_AR}\n${botSenderMsg}`, options);
       else
         bot.sendMessage(chatId, `${ADMIN_COMMANDS_MESSAGE_EN}\n${botSenderMsg}`, options);
       break;
     case DiagnosticMessage.USER_COMMANDS_MESSAGE:
-      if (language() == "ar")
+      if (await language() == "ar")
         bot.sendMessage(chatId, `${USER_COMMANDS_MESSAGE_AR}\n${botSenderMsg}`, options);
       else
         bot.sendMessage(chatId, `${USER_COMMANDS_MESSAGE_EN}\n${botSenderMsg}`, options);
       break;
     case DiagnosticMessage.UNKNOWN_COMMAND:
-      if (language() == "ar")
+      if (await language() == "ar")
         bot.sendMessage(chatId, `أمر غير معروف\\.\n${botSenderMsg}`, options);
       else
         bot.sendMessage(chatId, `Unknown command\\.\n${botSenderMsg}`, options);
@@ -181,49 +181,49 @@ exports.sendDiagnosticMessage = function (messageType, chatId, opts = {}) {
         exports.sendDiagnosticMessage(DiagnosticMessage.USER_COMMANDS_MESSAGE, chatId);
       break;
     case DiagnosticMessage.USER_MESSAGES_WILL_BE_SIGNED_MESSAGE:
-      if (language() == "ar")
+      if (await language() == "ar")
         bot.sendMessage(chatId, `الرسائل المرسلة من قبل ${userFullName} \\([${username}](tg://user?id=${userId})\\) ستكون موقعة\\.\n${botSenderMsg}`, options);
       else
         bot.sendMessage(chatId, `Messages sent by ${userFullName} \\([${username}](tg://user?id=${userId})\\) will be signed\\.\n${botSenderMsg}`, options);
       break;
     case DiagnosticMessage.USER_MESSAGES_WILL_NOT_BE_SIGNED_MESSAGE:
-      if (language() == "ar")
+      if (await language() == "ar")
         bot.sendMessage(chatId, `الرسائل المرسلة من قبل ${userFullName} \\([${username}](tg://user?id=${userId})\\) لن تكون موقعة\\.\n${botSenderMsg}`, options);
       else
         bot.sendMessage(chatId, `Messages sent by ${userFullName} \\([${username}](tg://user?id=${userId})\\) will not be signed\\.\n${botSenderMsg}`, options);
       break;
     case DiagnosticMessage.SHOW_REPLIED_TO_MESSAGES_MESSAGE:
-      if (language() == "ar")
+      if (await language() == "ar")
         bot.sendMessage(chatId, `سيتمكن المستخدم من رؤية أي رسالة من الرسائل التي أرسلها تم الرد عليها\\.\n${botSenderMsg}`, options);
       else
         bot.sendMessage(chatId, `The user will be able to see which message admins have replied to\\.\n${botSenderMsg}`, options);
       break;
     case DiagnosticMessage.HIDE_REPLIED_TO_MESSAGES_MESSAGE:
-      if (language() == "ar")
+      if (await language() == "ar")
         bot.sendMessage(chatId, `لن يتمكن المستخدم من رؤية أي رسالة من الرسائل التي أرسلها تم الرد عليها\\.\n${botSenderMsg}`, options);
       else
         bot.sendMessage(chatId, `The user will not be able to see which message admins have replied to\\.\n${botSenderMsg}`, options);
       break;
     case DiagnosticMessage.FORWARDING_IS_ON_MESSAGE:
-      if (language() == "ar")
+      if (await language() == "ar")
         bot.sendMessage(chatId, `الرسائل التي يرسلها المستخدم سيتم تحوليها بدلًا من إرسالها\\.\n${botSenderMsg}`, options);
       else
         bot.sendMessage(chatId, `User messages sent to the bot will be forwarded instead of being sent\\.\n${botSenderMsg}`, options);
       break;
     case DiagnosticMessage.FORWARDING_IS_OFF_MESSAGE:
-      if (language() == "ar")
+      if (await language() == "ar")
         bot.sendMessage(chatId, `الرسائل التي يرسلها المستخدم لن يتم تحويلها\\. بدلًا من ذلك, سيتم إرسالها\\.\n${botSenderMsg}`, options);
       else
         bot.sendMessage(chatId, `User messages sent to the bot will NOT be forwarded. Instead, they will be sent\\.\n${botSenderMsg}`, options);
       break;
     case DiagnosticMessage.USER_WELCOMING_MESSAGE:
-      if (language() == "ar")
+      if (await language() == "ar")
         bot.sendMessage(chatId, `${USER_WELCOMING_MESSAGE_AR}\n${botSenderMsg}`, options);
       else
         bot.sendMessage(chatId, `${USER_WELCOMING_MESSAGE_EN}\n${botSenderMsg}`, options);
       break;
     case DiagnosticMessage.USER_CHAT_HAS_ALREADY_STARTED:
-      if (language() == "ar")
+      if (await language() == "ar")
         bot.sendMessage(chatId, `محادثتك قد بدأت بالفعل\\. أرسل أي رسالة تريدها و سنحاول أن نرد عليها باسرع وقت\\.\n${botSenderMsg}`, options);
       else
         bot.sendMessage(chatId, `"Your chat has already started\\. Send whatever message you want and we will hopefully respond ASAP\\."\n${botSenderMsg}`, options);

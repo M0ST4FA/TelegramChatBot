@@ -1,22 +1,23 @@
 const { ADMIN_CHAT_ID, bot } = require('./constants.js')
-const { getResponderMessage, adminRepliesMessagesA2U, getSenderMessage, userMessagesU2A } = require('./common.js')
-const { showResponderName, doesUserSign, isUserPrivate } = require('./settings.js');
+const { getResponderMessage, getSenderMessage, getMessage, getMessageFromUserChat, escapeMarkdownV2 } = require('./common.js')
 const { sendDiagnosticMessage, DiagnosticMessage } = require('./diagnostics.js');
 
-exports.editAdminMessageText = function (msg) {
+exports.editAdminMessageText = async function (msg) {
 
   // Get basic message info
   const adminChatMsgId = msg.message_id;
 
   // Create final message text
   let text = msg.text || '';
-  const responderMsg = getResponderMessage(msg);
+  text = escapeMarkdownV2(text);
 
-  if (doesUserSign(msg.from))
-    text += `\n${responderMsg}`;
+  const responderMsg = await getResponderMessage(msg); // The function takes into account the state of the user
+
+  text += `\n${responderMsg}`;
+  text = text.trim();
 
   // The message ID in the user's chat
-  const { messageId: userChatMsgId, chatId: userChatId } = adminRepliesMessagesA2U.get(adminChatMsgId);
+  const { userMessageId: userChatMsgId, userChatId } = await getMessage(msg);
 
   const options = {
     parse_mode: "MarkdownV2",
@@ -29,7 +30,7 @@ exports.editAdminMessageText = function (msg) {
 
 }
 
-exports.editUserMessageText = function (msg) {
+exports.editUserMessageText = async function (msg) {
 
   // Get basic message info
   const userMsgId = msg.message_id;
@@ -37,13 +38,16 @@ exports.editUserMessageText = function (msg) {
 
   // Create final message text
   let text = msg.text || '';
-  const senderMsg = getSenderMessage(msg);
+  text = escapeMarkdownV2(text);
 
-  if (!isUserPrivate(msg.from))
-    text += `\n${senderMsg}`;
+  const senderMsg = await getSenderMessage(msg); // The function takes into account the state of the user
+
+  text += `\n${senderMsg}`;
+  text = text.trim();
 
   // The message ID in the admin chat
-  const adminMsgId = userMessagesU2A.get(userChatId).get(userMsgId);
+  const message = await getMessageFromUserChat(userChatId, userMsgId);
+  const adminMsgId = message.adminMessageId;
 
   const options = {
     parse_mode: "MarkdownV2",
@@ -56,20 +60,22 @@ exports.editUserMessageText = function (msg) {
 
 }
 
-exports.editAdminMessageCaption = function (msg) {
+exports.editAdminMessageCaption = async function (msg) {
 
   // Get basic message info
   const adminChatMsgId = msg.message_id;
 
   // Create final message text
   let text = msg.caption || '';
-  const responderMsg = getResponderMessage(msg);
+  text = escapeMarkdownV2(text);
 
-  if (doesUserSign(msg.from))
-    text += `\n${responderMsg}`;
+  const responderMsg = await getResponderMessage(msg); // The function takes into account the state of the user
+
+  text += `\n${responderMsg}`;
+  text = text.trim();
 
   // The message ID in the user's chat
-  const { messageId: userChatMsgId, chatId: userChatId } = adminRepliesMessagesA2U.get(adminChatMsgId);
+  const { userMessageId: userChatMsgId, userChatId } = await getMessage(msg);
 
   const options = {
     parse_mode: "MarkdownV2",
@@ -82,7 +88,7 @@ exports.editAdminMessageCaption = function (msg) {
 
 }
 
-exports.editUserMessageCaption = function (msg) {
+exports.editUserMessageCaption = async function (msg) {
 
   // Get basic message info
   const userChatMsgId = msg.message_id;
@@ -90,47 +96,24 @@ exports.editUserMessageCaption = function (msg) {
 
   // Create final message text
   let text = msg.caption || '';
-  const senderMsg = getSenderMessage(msg);
+  text = escapeMarkdownV2(text);
 
-  if (!isUserPrivate(msg.from))
-    text += `\n${senderMsg}`;
+  const senderMsg = getSenderMessage(msg);  // The function takes into account the state of the user
 
-  // The message ID in the user's chat
-  const adminChatMsgId = userMessagesU2A.get(userChatId).get(userChatMsgId);
+  text += `\n${senderMsg}`;
+  text = text.trim();
+
+  // The message ID in the admin chat
+  const message = await getMessageFromUserChat(userChatId, userChatMsgId);
+  const adminMsgId = message.adminMessageId;
 
   const options = {
     parse_mode: "MarkdownV2",
     chat_id: ADMIN_CHAT_ID,
-    message_id: adminChatMsgId,
+    message_id: adminMsgId,
   }
 
   bot.editMessageCaption(text, options);
   sendDiagnosticMessage(DiagnosticMessage.EDITED_MESSAGE_CAPTION, userChatId, { reply_to_message_id: userChatMsgId });
-
-}
-
-exports.editMessagePhoto = function (msg) {
-
-  // Get basic message info
-  const msgId = msg.message_id;
-
-  // Create final message text
-  let text = msg.caption || '';
-  const responderMsg = getResponderMessage(msg);
-
-  if (showResponderName())
-    text += `\n${responderMsg}`;
-
-  // The message ID in the user's chat
-  const { messageId: userChatMsgId, chatId: forwardChatId } = adminRepliesMessagesA2U.get(msgId);
-
-  const options = {
-    chat_id: forwardChatId,
-    message_id: userChatMsgId,
-    caption_entities: showResponderName() ? [{ type: "blockquote", offset: text.indexOf(`${responderMsg}`), length: responderMsg.length }] : []
-  }
-
-  bot.editMessageCaption(text, options)
-  bot.sendMessage(ADMIN_CHAT_ID, 'Edited message caption.', { reply_to_message_id: msgId })
 
 }

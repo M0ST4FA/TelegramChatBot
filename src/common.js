@@ -1,17 +1,219 @@
-const { doesUserSign } = require('./settings.js');
+const { prisma, ADMIN_CHAT_ID } = require('./constants.js');
+const { adminSigns, isUserPrivate } = require('./settings.js');
 
-exports.forwardedMessagesA2U = new Map();
-exports.adminRepliesMessagesA2U = new Map();
-exports.userMessagesU2A = new Map();
+exports.addUser = async function (user) {
+  const sUserId = user.id.toString();
 
-exports.setUserMessagesU2A = function (chatId, userMsgId, adminMsgId) {
-  let userMap = exports.userMessagesU2A.get(chatId);
+  console.log(user);
 
-  if (!userMap)
-    exports.userMessagesU2A.set(chatId, new Map([[userMsgId, adminMsgId]]));
+  return await prisma.user.create({
+    data: {
+      userId: sUserId
+    }
+  });
+}
+
+exports.addAdmin = async function (admin) {
+  const sUserId = admin.id.toString();
+
+  return await prisma.admin.create({
+    data: {
+      userId: sUserId,
+      signs: true
+    }
+  });
+}
+
+exports.getUser = async function (userId) {
+  const sUserId = userId.toString();
+
+  return await prisma.user.findFirst({
+    where: {
+      userId: sUserId
+    }
+  });
+}
+
+exports.getAdmin = async function (userId) {
+  const sUserId = userId.toString();
+
+  return await prisma.admin.findFirst({
+    where: {
+      userId: sUserId
+    }
+  });
+}
+
+exports.addUserMessage = async function (userChatId, userMsgId, adminMsgId) {
+  const sUserChatId = userChatId.toString();
+  const sUserMessageId = userMsgId.toString();
+  const sAdminMessageId = adminMsgId.toString();
+
+  await prisma.message.create({
+    data: {
+      userChatId: sUserChatId,
+      userMessageId: sUserMessageId,
+      adminMessageId: sAdminMessageId,
+      forwarded: true
+    }
+  })
+}
+
+exports.addAdminMessage = async function (userChatId, userMsgId, adminMsgId) {
+  const sUserChatId = userChatId.toString();
+  const sUserMessageId = userMsgId.toString();
+  const sAdminMessageId = adminMsgId.toString();
+
+  await prisma.message.create({
+    data: {
+      userChatId: sUserChatId,
+      userMessageId: sUserMessageId,
+      adminMessageId: sAdminMessageId,
+      forwarded: false
+    }
+  })
+}
+
+exports.isMessageSentByUser = async function (msg) {
+  const sMessageId = msg.message_id.toString();
+  const sChatId = msg.chat.id.toString();
+  let message;
+
+  if (msg.chat.id == ADMIN_CHAT_ID)
+    message = await prisma.message.findFirst({
+      where: {
+        AND: [{
+          adminMessageId: sMessageId
+        }, {
+          forwarded: true
+        }
+        ]
+      }
+    })
   else
-    userMap.set(userMsgId, adminMsgId);
+    message = await prisma.message.findFirst({
+      where: {
+        AND: [{
+          userMessageId: sMessageId
+        },
+        {
+          AND: [
+            { userChatId: sChatId },
+            {
+              forwarded: true
+            }
+          ]
+        }
+        ]
+      }
+    })
 
+  return message ? true : false;
+}
+
+exports.isMessageSentByAdmin = async function (msg) {
+  const sMessageId = msg.message_id.toString();
+  const sChatId = msg.chat.id.toString();
+  let message;
+
+  if (msg.chat.id == ADMIN_CHAT_ID)
+    message = await prisma.message.findFirst({
+      where: {
+        AND: [{
+          adminMessageId: sMessageId
+        }, {
+          forwarded: false
+        }
+        ]
+      }
+    })
+  else
+    message = await prisma.message.findFirst({
+      where: {
+        AND: [{
+          userMessageId: sMessageId
+        },
+        {
+          AND: [
+            { userChatId: sChatId },
+            {
+              forwarded: false
+            }
+          ]
+        }
+        ]
+      }
+    })
+
+  return message ? true : false;
+}
+
+exports.getMessage = async function (msg) {
+  const sMessageId = msg.message_id.toString();
+  const sChatId = msg.chat.id.toString();
+
+  if (msg.chat.id == ADMIN_CHAT_ID)
+    return await prisma.message.findFirst({
+      where: {
+        adminMessageId: sMessageId
+      }
+    })
+  else
+    return await prisma.message.findFirst({
+      where: {
+        AND: [{
+          userMessageId: sMessageId
+        },
+        { userChatId: sChatId }
+        ]
+      }
+    })
+}
+
+exports.getUserMessage = async function (adminMsgId) {
+  const sMessageId = adminMsgId.toString();
+
+  return await prisma.message.findFirst({
+    where: {
+      AND: [
+        { adminMessageId: sMessageId },
+        { forwarded: true }
+      ]
+    }
+  })
+}
+
+exports.getAdminMessage = async function (chatId, userMsgId) {
+  const sMessageId = userMsgId.toString();
+  const sChatId = chatId.toString();
+
+  return await prisma.message.findFirst({
+    where: {
+      AND: [
+        { userMessageId: sMessageId },
+        {
+          AND: [
+            { userChatId: sChatId },
+            { forwarded: false }
+          ]
+        }
+      ]
+    }
+  })
+}
+
+exports.getMessageFromUserChat = async function (chatId, userMsgId) {
+  const sMessageId = userMsgId.toString();
+  const sChatId = chatId.toString();
+
+  return await prisma.message.findFirst({
+    where: {
+      AND: [
+        { userMessageId: sMessageId },
+        { userChatId: sChatId }
+      ]
+    }
+  })
 }
 
 exports.getUserNameFromUser = function (user) {
@@ -31,11 +233,11 @@ exports.getFullNameFromUser = function (user) {
   return fullName;
 }
 
-exports.getResponderMessage = function (msg, markdown = true) {
+exports.getResponderMessage = async function (msg, markdown = true) {
 
   let responderMsg = '';
 
-  if (!doesUserSign(msg.from))
+  if (!(await adminSigns(msg.from)))
     return responderMsg;
 
   const fullName = exports.getFullNameFromUser(msg.from);
@@ -48,17 +250,25 @@ exports.getResponderMessage = function (msg, markdown = true) {
   return responderMsg;
 }
 
-exports.getSenderMessage = function (msg, markdown = true) {
+exports.getSenderMessage = async function (msg, markdown = true) {
+
+  let senderMsg = '';
+
+  if (await isUserPrivate(msg.from))
+    return senderMsg;
 
   const fullName = exports.getFullNameFromUser(msg.from);
   const username = exports.getUserNameFromUser(msg.from);
   const userId = msg.from.id;
-  let senderMsg = '';
 
   if (markdown)
-    senderMsg = `>${fullName} \\([${username}](tg://user?id=${userId}):${userId}\\)`
+    senderMsg = `>${fullName} \\(${username}:${userId}\\)`
   else
     senderMsg = `${fullName} (${username}:${userId})`;
 
   return senderMsg;
+}
+
+exports.escapeMarkdownV2 = function (text) {
+  return text.replace(/([_*\[\]()~`>#+\-=|{}.!])/g, '\\$1');
 }

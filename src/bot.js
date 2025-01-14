@@ -1,8 +1,8 @@
 const { ADMIN_CHAT_ID, bot } = require('./constants.js');
-const { adminRepliesMessagesA2U, userMessagesU2A } = require('./common.js');
+const { isMessageSentByAdmin, getMessage } = require('./common.js');
 const { handleUserChatCommands, handleAdminChatCommands } = require('./handleCommands.js');
 const { sendAdminMessage, sendUserMessage } = require('./handleReplies.js');
-const { editAdminMessageText, editUserMessageText, editAdminMessageCaption: editMessageCaption, editUserMessageCaption, editAdminMessageCaption } = require('./editMessage.js');
+const { editAdminMessageText, editUserMessageText, editUserMessageCaption, editAdminMessageCaption } = require('./editMessage.js');
 const { isChatBanned } = require('./settings.js');
 
 // Handle incoming messages from users
@@ -15,25 +15,25 @@ bot.on('message', async (msg) => {
     // MESSAGES COMING FROM USER CHATS
     if (chatId != ADMIN_CHAT_ID) {
 
-      // If the user (chat, both have the same ID) is banned, do nothing
-      if (isChatBanned(chatId))
-        return;
-
       // If the user has sent a command, handle it
-      if (handleUserChatCommands(msg))
+      if (await handleUserChatCommands(msg))
         return;
 
-      if (sendUserMessage(msg))
+      // If the user (chat, both have the same ID) is banned, do nothing
+      if (await isChatBanned(msg.from.id))
+        return;
+
+      if (await sendUserMessage(msg))
         return;
 
     } else { // MESSAGES COMING FROM THE ADMIN CHAT
 
       // If this returns true, that means the message was a command
-      if (handleAdminChatCommands(msg))
+      if (await handleAdminChatCommands(msg))
         return;
 
       // If this returns true, the message was handled successfully
-      if (sendAdminMessage(msg))
+      if (await sendAdminMessage(msg))
         return;
 
     }
@@ -58,7 +58,7 @@ bot.on('edited_message_text', async (msg) => {
       return;
 
     // If this is not a message we've sent to some user
-    if (!adminRepliesMessagesA2U.has(msgId))
+    if (!(await isMessageSentByAdmin(msg)))
       return;
 
     if (msg.text)
@@ -67,7 +67,7 @@ bot.on('edited_message_text', async (msg) => {
   } else {
 
     // If the bot doesn't know about this message
-    if (!userMessagesU2A?.get(msgChatId)?.get(msgId))
+    if (!(await getMessage(msg)))
       return;
 
     if (msg.text)
@@ -91,7 +91,7 @@ bot.on('edited_message_caption', async (msg) => {
       return;
 
     // If this is not a message we've sent to some user
-    if (!adminRepliesMessagesA2U.has(msgId))
+    if (!(await isMessageSentByAdmin(msg)))
       return;
 
     if (msg.caption)
@@ -100,7 +100,7 @@ bot.on('edited_message_caption', async (msg) => {
   } else {
 
     // If the bot doesn't know about this message
-    if (!userMessagesU2A?.get(msgChatId)?.get(msgId))
+    if (!(await getMessage(msg)))
       return;
 
     if (msg.caption)
