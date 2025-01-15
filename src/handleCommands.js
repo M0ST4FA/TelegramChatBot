@@ -1,6 +1,6 @@
 const { ADMIN_CHAT_ID, bot, prisma } = require('./constants.js');
-const { getFullNameFromUser, getUserNameFromUser, getUserMessage, getUser, addUser, getMessage } = require('./common.js');
-const { isUserPrivate, isChatBanned, doNotSignMessagesOfAdmin, signMessagesOfAdmin, disableForwardMode, enableForwardMode, disablePrivateMode, enablePrivateMode, setArabicLanguage, setEnglishLanguage, addToBannedChats, removeFromBannedChats, showReplies, hideReplies, getBannedChatIds } = require('./settings.js');
+const { getFullNameFromUser, getUserNameFromUser, getUserMessage, getUser, getMessage } = require('./common.js');
+const { doNotSignMessagesOfAdmin, signMessagesOfAdmin, settings, users } = require('./settings.js');
 const { sendDiagnosticMessage, DiagnosticMessage } = require('./diagnostics.js');
 
 const banChat = async function (chatId, banMsgId) {
@@ -11,11 +11,11 @@ const banChat = async function (chatId, banMsgId) {
   }
 
   // If user is already banned
-  if (await isChatBanned(chatId))
+  if (await users.isUserBanned({ id: chatId }))
     return sendDiagnosticMessage(DiagnosticMessage.USER_IS_ALREADY_BANNED, ADMIN_CHAT_ID, options);
 
   // Add the user to the list of banned users
-  addToBannedChats(chatId);
+  users.banUser({ id: chatId });
 
   // Send diagnostic message to the user
   sendDiagnosticMessage(DiagnosticMessage.USER_BANNING_MESSAGE, chatId);
@@ -35,11 +35,11 @@ const unbanChat = async function (chatId, unbanMsgId) {
   }
 
   // If user is already not banned
-  if (!(await isChatBanned(chatId)))
+  if (!(await users.isUserBanned({ id: chatId })))
     return sendDiagnosticMessage(DiagnosticMessage.USER_IS_ALREADY_NOT_BANNED, ADMIN_CHAT_ID, options);
 
   // Remove the user from the list of banned users
-  removeFromBannedChats(chatId);
+  users.unbanUser({ id: chatId });
 
   // Inform the user that they have been removed from the list of banned users
   sendDiagnosticMessage(DiagnosticMessage.USER_NO_LONGER_BANNED_MESSAGE, chatId);
@@ -54,7 +54,7 @@ const unbanChat = async function (chatId, unbanMsgId) {
 
 const initializeBot = async function () {
 
-  const initializedObj = await prisma.setting.findFirst({
+  const initializedObj = await prisma.setting.findUnique({
     where: {
       key: 'initialized'
     }
@@ -64,7 +64,7 @@ const initializeBot = async function () {
 
   if (initialized) {
     bot.sendMessage(ADMIN_CHAT_ID, 'Bot is already initialized.');
-    return;
+    return true;
   }
 
   const settings = [
@@ -74,16 +74,22 @@ const initializeBot = async function () {
     { key: 'initialized', value: JSON.stringify(true) }
   ];
 
+  const settingPromiseArr = [];
   for (const setting of settings)
-    await prisma.setting.create(
+    settingPromiseArr.push(prisma.setting.create(
       {
         data: { key: setting.key, value: setting.value }
       }
-    );
+    ));
 
+  await Promise.allSettled(settingPromiseArr);
+  bot.sendMessage(ADMIN_CHAT_ID, 'Initialized bot.');
+
+  return true;
 }
 
 exports.handleAdminChatCommands = async function (msg) {
+
   const msgText = msg.text || '';
 
   if (!msgText)
@@ -138,10 +144,10 @@ exports.handleAdminChatCommands = async function (msg) {
     }
 
     if (res == 'off') {
-      hideReplies();
+      await settings.setReplies(off);
       sendDiagnosticMessage(DiagnosticMessage.HIDE_REPLIED_TO_MESSAGES_MESSAGE, ADMIN_CHAT_ID, options);
     } else {
-      showReplies();
+      await settings.setReplies(on);
       sendDiagnosticMessage(DiagnosticMessage.SHOW_REPLIED_TO_MESSAGES_MESSAGE, ADMIN_CHAT_ID, options);
     }
 
@@ -160,10 +166,10 @@ exports.handleAdminChatCommands = async function (msg) {
     }
 
     if (res == 'off') {
-      disableForwardMode();
+      settings.setForwardMode(false);
       sendDiagnosticMessage(DiagnosticMessage.FORWARDING_IS_OFF_MESSAGE, ADMIN_CHAT_ID, options);
     } else {
-      enableForwardMode();
+      settings.setForwardMode(true);
       sendDiagnosticMessage(DiagnosticMessage.FORWARDING_IS_ON_MESSAGE, ADMIN_CHAT_ID, options);
     }
 
@@ -181,7 +187,7 @@ exports.handleAdminChatCommands = async function (msg) {
         .then(async member => {
           const user = member.user;
 
-          if (await isUserPrivate(user)) {
+          if (await users.isUserPrivate(user)) {
             bot.sendMessage(ADMIN_CHAT_ID, `${user.id} [User is in private mode]`);
             return;
           }
@@ -229,11 +235,11 @@ exports.handleAdminChatCommands = async function (msg) {
     const languageCode = regexMatch.at(1);
 
     if (languageCode == "ar")
-      await setArabicLanguage();
+      settings.setLanguage('ar');
     else
-      await setEnglishLanguage();
+      settings.setLanguage('en');
 
-    await sendDiagnosticMessage(DiagnosticMessage.BOT_LANGUAGE_CHANGE_MESSAGE, ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id });
+    sendDiagnosticMessage(DiagnosticMessage.BOT_LANGUAGE_CHANGE_MESSAGE, ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id });
   }
   else
     sendDiagnosticMessage(DiagnosticMessage.UNKNOWN_COMMAND, ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id });
@@ -313,9 +319,9 @@ exports.handleAdminChatReplyCommands = async function (msg) { // msg must be a r
 
     const member = await bot.getChatMember(userChatId, userChatId);
     const user = member.user;
-    const isInPrivateMode = await isUserPrivate(user);
+    const isInPrivateMode = await users.isUserPrivate(user);
     const id = user.id;
-    const isUserBanned = await isChatBanned(id);
+    const isUserBanned = await users.isUserBanned({ id: chatId });
 
     if (isInPrivateMode) {
       const userInfo = `
@@ -385,7 +391,7 @@ exports.handleUserChatCommands = async function (msg) {
     if (await getUser(msg.from.id)) // If the user has already /start ed the chat
       sendDiagnosticMessage(DiagnosticMessage.USER_CHAT_HAS_ALREADY_STARTED, userChatId, options);
     else {
-      await addUser(msg.from);
+      await users.addUser(msg.from);
       sendDiagnosticMessage(DiagnosticMessage.USER_WELCOMING_MESSAGE, userChatId, options);
     }
 
@@ -402,10 +408,10 @@ exports.handleUserChatCommands = async function (msg) {
     const res = regexMatch.at(1);
 
     if (res == 'off') {
-      disablePrivateMode(msg.from)
+      await users.makeUserNonPrivate(msg.from);
       bot.sendMessage(userChatId, "You left private mode.");
     } else {
-      enablePrivateMode(msg.from)
+      await users.makeUserPrivate(msg.from);
       bot.sendMessage(userChatId, "You entered private mode.");
     }
 

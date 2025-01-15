@@ -1,49 +1,5 @@
 const { prisma, ADMIN_CHAT_ID } = require('./constants.js');
-const { adminSigns, isUserPrivate } = require('./settings.js');
-
-exports.addUser = async function (user, banned = false) {
-  const sUserId = user.id;
-
-  console.log(user);
-
-  return await prisma.user.create({
-    data: {
-      userId: sUserId,
-      banned
-    }
-  });
-}
-
-exports.addAdmin = async function (admin) {
-  const sUserId = admin.id;
-
-  return await prisma.admin.create({
-    data: {
-      userId: sUserId,
-      signs: true
-    }
-  });
-}
-
-exports.getUser = async function (userId) {
-  const sUserId = BigInt(userId)
-
-  return await prisma.user.findFirst({
-    where: {
-      userId: sUserId
-    }
-  });
-}
-
-exports.getAdmin = async function (userId) {
-  const sUserId = BigInt(userId)
-
-  return await prisma.admin.findFirst({
-    where: {
-      userId: sUserId
-    }
-  });
-}
+const { users, admins } = require('./settings.js');
 
 exports.addUserMessage = async function (userChatId, userMsgId, adminMsgId) {
   const sUserChatId = BigInt(userChatId)
@@ -81,31 +37,18 @@ exports.isMessageSentByUser = async function (msg) {
   let message;
 
   if (msg.chat.id == ADMIN_CHAT_ID)
-    message = await prisma.message.findFirst({
+    message = await prisma.message.findUnique({
       where: {
-        AND: [{
-          adminMessageId: sMessageId
-        }, {
-          forwarded: true
-        }
-        ]
+        adminMessageId: sMessageId,
+        forwarded: true
       }
     })
   else
-    message = await prisma.message.findFirst({
+    message = await prisma.message.findUnique({
       where: {
-        AND: [{
-          userMessageId: sMessageId
-        },
-        {
-          AND: [
-            { userChatId: sChatId },
-            {
-              forwarded: true
-            }
-          ]
-        }
-        ]
+        userMessageId: sMessageId,
+        userChatId: sChatId,
+        forwarded: true
       }
     })
 
@@ -118,31 +61,18 @@ exports.isMessageSentByAdmin = async function (msg) {
   let message;
 
   if (msg.chat.id == ADMIN_CHAT_ID)
-    message = await prisma.message.findFirst({
+    message = await prisma.message.findUnique({
       where: {
-        AND: [{
-          adminMessageId: sMessageId
-        }, {
-          forwarded: false
-        }
-        ]
+        adminMessageId: sMessageId,
+        forwarded: false
       }
     })
   else
-    message = await prisma.message.findFirst({
+    message = await prisma.message.findUnique({
       where: {
-        AND: [{
-          userMessageId: sMessageId
-        },
-        {
-          AND: [
-            { userChatId: sChatId },
-            {
-              forwarded: false
-            }
-          ]
-        }
-        ]
+        userMessageId: sMessageId,
+        userChatId: sChatId,
+        forwarded: false
       }
     })
 
@@ -154,19 +84,16 @@ exports.getMessage = async function (msg) {
   const sChatId = BigInt(msg.chat.id);
 
   if (msg.chat.id == ADMIN_CHAT_ID)
-    return await prisma.message.findFirst({
+    return await prisma.message.findUnique({
       where: {
         adminMessageId: sMessageId
       }
     })
   else
-    return await prisma.message.findFirst({
+    return await prisma.message.findUnique({
       where: {
-        AND: [{
-          userMessageId: sMessageId
-        },
-        { userChatId: sChatId }
-        ]
+        userMessageId: sMessageId,
+        userChatId: sChatId
       }
     })
 }
@@ -174,12 +101,10 @@ exports.getMessage = async function (msg) {
 exports.getUserMessage = async function (adminMsgId) {
   const sMessageId = BigInt(adminMsgId)
 
-  return await prisma.message.findFirst({
+  return await prisma.message.findUnique({
     where: {
-      AND: [
-        { adminMessageId: sMessageId },
-        { forwarded: true }
-      ]
+      adminMessageId: sMessageId,
+      forwarded: true
     }
   })
 }
@@ -188,17 +113,11 @@ exports.getAdminMessage = async function (chatId, userMsgId) {
   const sMessageId = BigInt(userMsgId)
   const sChatId = BigInt(chatId)
 
-  return await prisma.message.findFirst({
+  return await prisma.message.findUnique({
     where: {
-      AND: [
-        { userMessageId: sMessageId },
-        {
-          AND: [
-            { userChatId: sChatId },
-            { forwarded: false }
-          ]
-        }
-      ]
+      userMessageId: sMessageId,
+      userChatId: sChatId,
+      forwarded: false
     }
   })
 }
@@ -207,12 +126,10 @@ exports.getMessageFromUserChat = async function (chatId, userMsgId) {
   const sMessageId = BigInt(userMsgId)
   const sChatId = BigInt(chatId)
 
-  return await prisma.message.findFirst({
+  return await prisma.message.findUnique({
     where: {
-      AND: [
-        { userMessageId: sMessageId },
-        { userChatId: sChatId }
-      ]
+      userMessageId: sMessageId,
+      userChatId: sChatId
     }
   })
 }
@@ -236,8 +153,10 @@ exports.getFullNameFromUser = function (user) {
 
 exports.getResponderMessage = async function (msg, markdown = true) {
 
-  if (!(await adminSigns(msg.from)))
-    return '';
+  if (!(await admins.adminSigns(msg.from)))
+    return {
+      responderMsg: ''
+    };
 
   const fullName = exports.getFullNameFromUser(msg.from);
 
@@ -252,8 +171,10 @@ exports.getResponderMessage = async function (msg, markdown = true) {
 
 exports.getSenderMessage = async function (msg, markdown = true) {
 
-  if (await isUserPrivate(msg.from))
-    return '';
+  if (await users.isUserPrivate(msg.from))
+    return {
+      senderMsg: ''
+    };
 
   const fullName = exports.getFullNameFromUser(msg.from);
   const username = exports.getUserNameFromUser(msg.from);

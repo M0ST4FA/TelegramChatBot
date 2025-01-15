@@ -1,8 +1,7 @@
-const { getResponderMessage, getFullNameFromUser, getSenderMessage, addAdminMessage, addUserMessage, isMessageSentByUser, getUserMessage, getMessageFromUserChat, escapeMarkdownV2 } = require('./common.js');
+const { getResponderMessage, getFullNameFromUser, getSenderMessage, addAdminMessage, addUserMessage, isMessageSentByUser, getUserMessage, getMessageFromUserChat } = require('./common.js');
 const { ADMIN_CHAT_ID, bot } = require('./constants.js');
-const { editUserMessageCaption } = require('./editMessage.js');
 const { handleAdminChatReplyCommands } = require('./handleCommands.js');
-const { forwardMode, isUserPrivate, adminSigns, repliesAreShown } = require('./settings.js');
+const { settings, users } = require('./settings.js');
 
 
 const sendAdminMessageToUserChat = async function (msg) {
@@ -27,7 +26,8 @@ const sendAdminMessageToUserChat = async function (msg) {
 
   const responderInfo = await getResponderMessage(msg, false); // The function takes into account the state of the user
 
-  const responderMsg = responderInfo.responderMsg;
+  const responderMsg = responderInfo.
+    responderMsg;
 
   text += `\n${responderMsg}`;
   text = text.trim();
@@ -35,7 +35,7 @@ const sendAdminMessageToUserChat = async function (msg) {
   // Forward the admin's reply back to the original user
   let adminSentMsgInUserChat;
   const replyToMessageIdOption = {
-    reply_to_message_id: await repliesAreShown() ? messageIdInUserChat : undefined
+    reply_to_message_id: settings.replies() ? messageIdInUserChat : undefined
   }
 
   const captionOption = {
@@ -320,7 +320,7 @@ const sendUserMessageToAdminChat = async function (msg) {
 exports.sendUserMessage = async function (msg) {
 
   // If forwarding mode is enabled AND also the user must not be in private mode
-  if (await forwardMode() && !(await isUserPrivate(msg.from)))
+  if (settings.forwardMode() && !(await users.isUserPrivate(msg.from)))
     await forwardUserMessageToAdminChat(msg);
   else // If forwarding mode is disabled or the user is in private mode
     await sendUserMessageToAdminChat(msg);
