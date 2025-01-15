@@ -1,14 +1,15 @@
 const { prisma, ADMIN_CHAT_ID } = require('./constants.js');
 const { adminSigns, isUserPrivate } = require('./settings.js');
 
-exports.addUser = async function (user) {
+exports.addUser = async function (user, banned = false) {
   const sUserId = user.id;
 
   console.log(user);
 
   return await prisma.user.create({
     data: {
-      userId: sUserId
+      userId: sUserId,
+      banned
     }
   });
 }

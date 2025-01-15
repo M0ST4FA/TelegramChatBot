@@ -83,7 +83,7 @@ const initializeBot = async function () {
 
 }
 
-exports.handleAdminChatCommands = async function handleCommands(msg) {
+exports.handleAdminChatCommands = async function (msg) {
   const msgText = msg.text || '';
 
   if (!msgText)
@@ -325,7 +325,7 @@ exports.handleAdminChatReplyCommands = async function (msg) { // msg must be a r
       `.trim();
 
       bot.sendMessage(ADMIN_CHAT_ID, userInfo);
-      return undefined;
+      return true;
     }
 
     username = getUserNameFromUser(user);
@@ -348,7 +348,7 @@ exports.handleAdminChatReplyCommands = async function (msg) { // msg must be a r
       }
 
       bot.sendMessage(ADMIN_CHAT_ID, userInfo, options)
-      return;
+      return true;
     }
 
     const photo = photos.photos.at(0).at(0);

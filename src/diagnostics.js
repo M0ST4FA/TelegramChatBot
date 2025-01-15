@@ -93,7 +93,7 @@ exports.sendDiagnosticMessage = async function (messageType, chatId, opts = {}) 
       break;
     case DiagnosticMessage.USER_BANNING_MESSAGE:
       if (await language() == "ar")
-        bot.sendMessage(chatId, `لقد تم حظرك من البوت\\.\n${botSenderMsg}`, options);
+        bot.sendMessage(chatId, `لقد تعطل البوت مؤقتًا\\.\n${botSenderMsg}`, options);
       else
         bot.sendMessage(chatId, `You've been banned from the bot.\n${botSenderMsg}`, options);
       break;
@@ -111,7 +111,8 @@ exports.sendDiagnosticMessage = async function (messageType, chatId, opts = {}) 
       break;
     case DiagnosticMessage.USER_NO_LONGER_BANNED_MESSAGE:
       if (await language() == "ar")
-        bot.sendMessage(chatId, `أنت لم تعد محظورا من البوت\\.\n${botSenderMsg}`, options);
+        // bot.sendMessage(chatId, `أنت لم تعد محظورا من البوت\\.\n${botSenderMsg}`, options);
+        break;
       else
         bot.sendMessage(chatId, `You're no longer banned from the bot\\.\n${botSenderMsg}`, options);
       break;
