@@ -540,7 +540,7 @@ class Admins {
     if (userObj.signs)
       return true;
 
-    await this.setAdmin(userId, { signs: true });
+    await this.setAdmin(user, { signs: true });
     return true;
   }
 
@@ -554,10 +554,10 @@ class Admins {
       console.log("Admin was just added after calling /sign off.");
     }
 
-    if (userObj.signs)
+    if (!userObj.signs)
       return true;
 
-    await this.setAdmin(userId, { signs: false });
+    await this.setAdmin(user, { signs: false });
     return true;
   }
 

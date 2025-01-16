@@ -121,10 +121,16 @@ export default class CommandHandler {
     else if (msgText == '/init')
       await initializeBot();
     else if (msgText.startsWith('/sign')) {
+
+      if (msgText == '/sign') {
+        sendDiagnosticMessage(DiagnosticMessage.ADMIN_SIGN_STATE_MESSAGE, BotInfo.ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id, user: msg.from })
+        return true;
+      }
+
       const regexMatch = /\/sign (on|off)/.exec(msgText);
 
       if (!regexMatch) {
-        sendDiagnosticMessage(DiagnosticMessage.INCORRECT_FORMAT_OF_COMMAND, BotInfo.ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id, correct_format: '/sign on\\|off' })
+        sendDiagnosticMessage(DiagnosticMessage.INCORRECT_FORMAT_OF_COMMAND, BotInfo.ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id, correct_format: '/sign on\\|off\\|' })
         return true;
       }
 
@@ -144,6 +150,12 @@ export default class CommandHandler {
       }
 
     } else if (msgText.startsWith('/replies')) {
+
+      if (msgText == '/replies') {
+        sendDiagnosticMessage(DiagnosticMessage.BOT_REPLIES_SETTING_MESSAGE, BotInfo.ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id })
+        return true;
+      }
+
       const regexMatch = /\/replies (on|off)/.exec(msgText);
 
       if (!regexMatch) {
@@ -166,6 +178,12 @@ export default class CommandHandler {
       }
 
     } else if (msgText.startsWith('/forwarding')) {
+
+      if (msgText == '/forwarding') {
+        sendDiagnosticMessage(DiagnosticMessage.BOT_FORWARDING_SETTING_MESSAGE, BotInfo.ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id })
+        return true;
+      }
+
       const regexMatch = /\/forwarding (on|off)/.exec(msgText);
 
       if (!regexMatch) {
@@ -239,10 +257,16 @@ export default class CommandHandler {
       unbanChat(chatId, msg.message_id);
 
     } else if (msgText.startsWith('/language')) {
+
+      if (msgText == '/language') {
+        sendDiagnosticMessage(DiagnosticMessage.BOT_LANGUAGE_MESSAGE, BotInfo.ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id })
+        return true;
+      }
+
       const regexMatch = /\/language (ar|en)/.exec(msgText);
 
       if (!regexMatch) {
-        sendDiagnosticMessage(DiagnosticMessage.BOT_LANGUAGE_MESSAGE, BotInfo.ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id })
+        sendDiagnosticMessage(DiagnosticMessage.INCORRECT_FORMAT_OF_COMMAND, BotInfo.ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id, correct_format: '/language ar\\|en\\|' })
         return true;
       }
 
@@ -384,7 +408,8 @@ export default class CommandHandler {
       return false;
 
     const options = {
-      reply_to_message_id: msg.message_id
+      reply_to_message_id: msg.message_id,
+      user: msg.from
     }
 
     if (msgText == '/commands')
@@ -399,7 +424,14 @@ export default class CommandHandler {
 
       return true;
     }
-    else if (msgText.startsWith('/private ')) {
+    else if (msgText.startsWith('/private')) {
+
+      // Show the private mode state of the user
+      if (msgText == '/private') {
+        sendDiagnosticMessage(DiagnosticMessage.USER_PRIVATE_STATE_MESSAGE, userChatId, options);
+        return true;
+      }
+
       const regexMatch = /\/private (on|off)/.exec(msgText);
 
       if (!regexMatch) {
@@ -411,10 +443,10 @@ export default class CommandHandler {
 
       if (res == 'off') {
         await users.makeUserNonPrivate(msg.from);
-        bot.sendMessage(userChatId, "You left private mode.");
+        sendDiagnosticMessage(DiagnosticMessage.USER_PRIVATE_MODE_CHANGED_MESSAGE, userChatId, options);
       } else {
         await users.makeUserPrivate(msg.from);
-        bot.sendMessage(userChatId, "You entered private mode.");
+        sendDiagnosticMessage(DiagnosticMessage.USER_PRIVATE_MODE_CHANGED_MESSAGE, userChatId, options);
       }
 
     }

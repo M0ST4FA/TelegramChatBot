@@ -253,8 +253,10 @@ export default class MessageHandler {
 
   static async sendUserMessage(msg) {
 
+    const userIsPrivate = await users.isUserPrivate(msg.from);
+
     // If forwarding mode is enabled AND also the user must not be in private mode
-    if (settings.forwardMode() && !(await users.isUserPrivate(msg.from)))
+    if (settings.forwardMode() && !userIsPrivate)
       await MessageHandler.#forwardUserMessageToAdminChat(msg);
     else // If forwarding mode is disabled or the user is in private mode
       await MessageHandler.#sendUserMessageToAdminChat(msg);

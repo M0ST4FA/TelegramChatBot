@@ -1,6 +1,6 @@
 import { UserInfo } from "./common.js";
 import { bot, BotInfo, TextMessages } from './constants.js'
-import { settings, users } from "./settings.js";
+import { admins, settings, users } from "./settings.js";
 
 export const DiagnosticMessage = Object.freeze({
   DELETED_MESSAGE: 0,
@@ -29,7 +29,12 @@ export const DiagnosticMessage = Object.freeze({
   FORWARDING_IS_ON_MESSAGE: 23,
   FORWARDING_IS_OFF_MESSAGE: 24,
   USER_WELCOMING_MESSAGE: 25,
-  USER_CHAT_HAS_ALREADY_STARTED: 26
+  USER_CHAT_HAS_ALREADY_STARTED: 26,
+  BOT_FORWARDING_SETTING_MESSAGE: 27,
+  BOT_REPLIES_SETTING_MESSAGE: 28,
+  ADMIN_SIGN_STATE_MESSAGE: 29,
+  USER_PRIVATE_MODE_CHANGED_MESSAGE: 30,
+  USER_PRIVATE_STATE_MESSAGE: 31
 })
 export const sendDiagnosticMessage = async function (messageType, chatId, opts = {}) {
 
@@ -40,13 +45,11 @@ export const sendDiagnosticMessage = async function (messageType, chatId, opts =
   }
 
   const user = opts.user;
-  let userIsPrivate = false;
   let username = '';
   let userFullName = '';
   let userId = 0;
 
   if (user) {
-    userIsPrivate = await users.isUserPrivate(user);
     username = UserInfo.getUserNameFromUser(user);
     userFullName = UserInfo.getFullNameFromUser(user);
     userId = user.id;
@@ -97,12 +100,12 @@ export const sendDiagnosticMessage = async function (messageType, chatId, opts =
       break;
     case DiagnosticMessage.ADMIN_BANNING_MESSAGE:
       if (settings.language() == "ar")
-        if (userIsPrivate)
+        if (await users.isUserPrivate(user))
           bot.sendMessage(chatId, `لقد تم حظر المستخدم الذي يحمل المعرف \\(${userId}\\) من البوت\\.\n${botSenderMsg}`, options);
         else
           bot.sendMessage(chatId, `لقد تم حظر المستخدم ${userFullName} \\(${username}:${userId}\\) من البوت\\.\n${botSenderMsg}`, options);
       else
-        if (userIsPrivate)
+        if (await users.isUserPrivate(user))
           bot.sendMessage(chatId, `The user with ID ${userId} has been banned from the bot\\.\n${botSenderMsg}`, options);
         else
           bot.sendMessage(chatId, `The user ${userFullName} \\(${username}:${userId}\\) has been banned from the bot\\.\n${botSenderMsg}`, options);
@@ -116,12 +119,12 @@ export const sendDiagnosticMessage = async function (messageType, chatId, opts =
       break;
     case DiagnosticMessage.ADMIN_USER_NO_LONGER_BANNED_MESSAGE:
       if (settings.language() == "ar")
-        if (userIsPrivate)
+        if (await users.isUserPrivate(user))
           bot.sendMessage(chatId, `لقد تمت إزالة المستخدم الذي يحمل المعرف \\(${userId}\\) قائمة الحظر\\.\n${botSenderMsg}`, options);
         else
           bot.sendMessage(chatId, `لقد تمت إزالة المستخدم ${userFullName} \\(${username}:${userId}\\) من قائمة الحظر\\.\n${botSenderMsg}`, options);
       else
-        if (userIsPrivate)
+        if (await users.isUserPrivate(user))
           bot.sendMessage(chatId, `The user with ID ${userId} has been removed from the banned list\\.\n${botSenderMsg}`, options);
         else
           bot.sendMessage(chatId, `The user ${userFullName} \\(${username}:${userId}\\) has been removed from the banned list\\.\n${botSenderMsg}`, options);
@@ -226,6 +229,66 @@ export const sendDiagnosticMessage = async function (messageType, chatId, opts =
         bot.sendMessage(chatId, `محادثتك قد بدأت بالفعل\\. أرسل أي رسالة تريدها و سنحاول أن نرد عليها باسرع وقت\\.\n${botSenderMsg}`, options);
       else
         bot.sendMessage(chatId, `"Your chat has already started\\. Send whatever message you want and we will hopefully respond ASAP\\."\n${botSenderMsg}`, options);
+      break;
+    case DiagnosticMessage.BOT_FORWARDING_SETTING_MESSAGE:
+      if (settings.language() == 'ar')
+        if (settings.forwardMode())
+          bot.sendMessage(chatId, `رسائل المستخدمين يتم توجيهها بدلًا من إرسالها\\. لتغيير هذا الإعداد, استخدم الأمر:\n/forwarding on\\|off\n${botSenderMsg}`, options);
+        else
+          bot.sendMessage(chatId, `رسائل المستخدمين يتم إرسالها بدلًا من توجيهها\\. لتغيير هذا الإعداد, استخدم الأمر:\n/forwarding on\\|off\n${botSenderMsg}`, options);
+      else
+        if (settings.forwardMode())
+          bot.sendMessage(chatId, `User messages are being forwarded instead of being sent\\.\nTo change this setting, use the command /forwarding on\\|off\n${botSenderMsg}`, options);
+        else
+          bot.sendMessage(chatId, `User messages are being sent instead of being forwarded\\.\nTo change this setting, use the command /forwarding on\\|off\n${botSenderMsg}`, options);
+      break;
+    case DiagnosticMessage.BOT_REPLIES_SETTING_MESSAGE:
+      if (settings.language() == 'ar')
+        if (settings.replies())
+          bot.sendMessage(chatId, `يتسطيع المستخدم أن يري أية رسالة بالضبط رد عليها المشرف\\. لتغيير هذا الإعداد, استخدم الأمر:\n/replies on\\|off\n${botSenderMsg}`, options);
+        else
+          bot.sendMessage(chatId, `لا يتسطيع المستخدم أن يري أية رسالة بالضبط رد عليها المشرف\\. لتغيير هذا الإعداد, استخدم الأمر:\n/replies on\\|off\n${botSenderMsg}`, options);
+      else
+        if (settings.replies())
+          bot.sendMessage(chatId, `The user can see which message admins have replied to\\.\nTo change this setting, use the command /replies on\\|off\n${botSenderMsg}`, options);
+        else
+          bot.sendMessage(chatId, `The user cannot see which message admins have replied to\\.\nTo change this setting, use the command /replies on\\|off\n${botSenderMsg}`, options);
+      break;
+    case DiagnosticMessage.ADMIN_SIGN_STATE_MESSAGE:
+      if (settings.language() == 'ar')
+        if (await admins.adminSigns(user))
+          bot.sendMessage(chatId, `رسائل المشرف ${userFullName} \\(${username}\\) موقعة\\. لإلغاء توقيع الرسائل, استخدم الأمر:\n/sign off\n${botSenderMsg}`, options);
+        else
+          bot.sendMessage(chatId, `رسائل المشرف ${userFullName} \\(${username}\\) غير موقعة\\. لتفعيل توقيع الرسائل, استخدم الأمر:\n/sign on\n${botSenderMsg}`, options);
+      else
+        if (await admins.adminSigns(user))
+          bot.sendMessage(chatId, `The messages of admin ${userFullName} \\(${username}\\) are signed\\.\nTo make them not signed, use the command /sign off\n${botSenderMsg}`, options);
+        else
+          bot.sendMessage(chatId, `The messages of admin ${userFullName} \\(${username}\\) are not signed\\.\nTo make them signed, use the command /sign on\n${botSenderMsg}`, options);
+      break;
+    case DiagnosticMessage.USER_PRIVATE_MODE_CHANGED_MESSAGE:
+      if (settings.language() == 'ar')
+        if (await users.isUserPrivate(user))
+          bot.sendMessage(chatId, `تم تفعيل الوضع الخاص\\. لن يظهر اسمك و لا معلوماتك للمشرفين\\. لإلغاء تفعيل هذا الوضع, استخدم الأمر:\n/private off\n${botSenderMsg}`, options);
+        else
+          bot.sendMessage(chatId, `تم إلغاء تفعيل الوضع الخاص\\. اسمك يظهر للمشرفين\\. لإعادة تفعيل هذا الوضع, استخدم الأمر:\n/private on\n${botSenderMsg}`, options);
+      else
+        if (await users.isUserPrivate(user))
+          bot.sendMessage(chatId, `Private mode is on\\. Your name and information will not appear to admins\\.\nTo disable this mode, use the command /private off\n${botSenderMsg}`, options);
+        else
+          bot.sendMessage(chatId, `Private mode is off\\. Your name and information will appear to admins\\.\nTo enable this mode, use the command /private on\n${botSenderMsg}`, options);
+      break;
+    case DiagnosticMessage.USER_PRIVATE_STATE_MESSAGE:
+      if (settings.language() == 'ar')
+        if (await users.isUserPrivate(user))
+          bot.sendMessage(chatId, `إنت في الوضع الخاص\\. لن يظهر اسمك و لا معلوماتك للمشرفين\\. لإلغاء تفعيل هذا الوضع, استخدم الأمر:\n/private off\n${botSenderMsg}`, options);
+        else
+          bot.sendMessage(chatId, `أنت لست في الوضع الخاص\\. اسمك يظهر للمشرفين\\. لتفعيل هذا الوضع, استخدم الأمر:\n/private on\n${botSenderMsg}`, options);
+      else
+        if (await users.isUserPrivate(user))
+          bot.sendMessage(chatId, `You are in private mode\\. Your name and information will not appear to admins\\.\nTo disable this mode, use the command /private off\n${botSenderMsg}`, options);
+        else
+          bot.sendMessage(chatId, `You are not in private mode\\. Your name and information will appear to admins\\.\nTo enable this mode, use the command /private on\n${botSenderMsg}`, options);
       break;
 
   }
