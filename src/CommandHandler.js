@@ -117,7 +117,7 @@ export default class CommandHandler {
       return true;
     }
     else if (msgText == '/commands')
-      sendDiagnosticMessage(DiagnosticMessage.ADMIN_COMMANDS_MESSAGE, ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id });
+      sendDiagnosticMessage(DiagnosticMessage.ADMIN_COMMANDS_MESSAGE, BotInfo.ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id });
     else if (msgText == '/init')
       await initializeBot();
     else if (msgText.startsWith('/sign')) {

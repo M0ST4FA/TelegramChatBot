@@ -216,7 +216,7 @@ export const sendDiagnosticMessage = async function (messageType, chatId, opts =
       if (settings.language() == "ar")
         bot.sendMessage(chatId, `الرسائل التي يرسلها المستخدم لن يتم تحويلها\\. بدلًا من ذلك, سيتم إرسالها\\.\n${botSenderMsg}`, options);
       else
-        bot.sendMessage(chatId, `User messages sent to the bot will NOT be forwarded. Instead, they will be sent\\.\n${botSenderMsg}`, options);
+        bot.sendMessage(chatId, `User messages sent to the bot will NOT be forwarded\\. Instead, they will be sent\\.\n${botSenderMsg}`, options);
       break;
     case DiagnosticMessage.USER_WELCOMING_MESSAGE:
       if (settings.language() == "ar")
