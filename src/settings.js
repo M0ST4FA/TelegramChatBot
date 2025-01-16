@@ -223,7 +223,7 @@ class Settings {
 
 class Users {
 
-  #users = new QuickLRU({ maxSize: 1000 });
+  #users = new QuickLRU({ maxSize: 500 });
   #bannedUserIds = new Set();
   constructor() {
   }
@@ -258,12 +258,13 @@ class Users {
   static #getUserDB = async function (userId) {
 
     const sUserId = BigInt(userId)
-
-    return await prisma.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: {
         userId: sUserId
       }
     });
+
+    return user ? user : null;
   }
 
   static async init() {
@@ -271,19 +272,17 @@ class Users {
   }
 
   async getUser(userId) {
-    const user = this.#users.get(userId);
+    let user = this.#users.get(userId);
 
     if (user)
       return user;
 
-    const userObj = await Users.#getUserDB(userId);
+    user = await Users.#getUserDB(userId);
 
-    if (userObj) {
-      this.#users.set(userObj.userId, userObj);
-      return userObj;
-    } else
-      return {};
+    if (user)
+      this.#users.set(user.userId, user);
 
+    return user;
   }
 
   async setUser(user, { banned, privateMode }) {
@@ -292,7 +291,7 @@ class Users {
 
     // If both are not specified
     if (banned == undefined && privateMode == undefined)
-      return {};
+      return null;
 
     let userObj = await this.getUser(userId);
 
@@ -342,7 +341,7 @@ class Users {
   // BANNING
   async isUserBanned(user) {
     const userObj = await this.getUser(user.id);
-    return Object.entries(userObj).length == 0 ? false : userObj.banned;
+    return !userObj ? false : userObj.banned;
   }
 
   async getBannedUserIds() {
@@ -352,11 +351,11 @@ class Users {
   async banUser(user) {
     const userId = user.id;
 
-    const userObj = await this.getUser(userId);
+    let userObj = await this.getUser(userId);
 
     if (!userObj) {
-      console.log('Trying to ban a non-existent user.');
-      return false;
+      userObj = await this.addUser(user, { banned: true });
+      console.log('User was not found. Added a new user (in a banned state).');
     }
 
     if (userObj.banned)
@@ -369,11 +368,11 @@ class Users {
   async unbanUser(user) {
     const userId = user.id;
 
-    const userObj = await this.getUser(userId);
+    let userObj = await this.getUser(userId);
 
     if (!userObj) {
-      console.log('Trying to unban a non-existent user.');
-      return false;
+      userObj = await this.addUser(user, { banned: false });
+      console.log('User was not found. Added a new user (in a non-banned state).');
     }
 
     if (!userObj.banned)
@@ -386,17 +385,17 @@ class Users {
   // PRIVATE
   async isUserPrivate(user) {
     const userObj = await this.getUser(user.id);
-    return Object.entries(userObj).length == 0 ? false : userObj.private;
+    return !userObj ? false : userObj.private;
   }
 
   async makeUserPrivate(user) {
     const userId = user.id;
 
-    const userObj = await this.getUser(userId);
+    let userObj = await this.getUser(userId);
 
     if (!userObj) {
-      console.log('Trying to make private a non-existent user.');
-      return false;
+      userObj = await this.addUser(user, { privateMode: true });
+      console.log('User was not found. Added a new user (in a private state).');
     }
 
     if (userObj.private)
@@ -409,11 +408,11 @@ class Users {
   async makeUserNonPrivate(user) {
     const userId = user.id;
 
-    const userObj = await this.getUser(userId);
+    let userObj = await this.getUser(userId);
 
     if (!userObj) {
-      console.log('Trying to make non-private a non-existent user.');
-      return false;
+      userObj = await this.addUser(user, { privateMode: false });
+      console.log('User was not found. Added a new user (in a non-private state).');
     }
 
     if (!userObj.private)
@@ -443,6 +442,8 @@ class Admins {
   static #addAdminDB = async function (admin) {
     const sUserId = admin.id;
 
+    console.log(admin);
+
     return await prisma.admin.create({
       data: {
         userId: sUserId,
@@ -453,12 +454,13 @@ class Admins {
 
   static #getAdminDB = async function (userId) {
     const sUserId = BigInt(userId)
-
-    return await prisma.admin.findUnique({
+    const user = await prisma.admin.findUnique({
       where: {
         userId: sUserId
       }
     });
+
+    return user ? user : null;
   }
 
   async getAdmin(userId) {
@@ -469,21 +471,19 @@ class Admins {
 
     const userObj = await Admins.#getAdminDB(userId);
 
-    if (userObj) {
+    if (userObj)
       this.#admins.set(userObj.userId, userObj);
-      return userObj;
-    } else
-      return {};
 
+    return userObj; // Even if it is null
   }
 
   async setAdmin(user, { signs }) {
 
     const userId = user.id;
 
-    // If both are not specified
+    // If signing is not specified
     if (signs == undefined)
-      return {};
+      return null;
 
     let userObj = await this.getAdmin(userId);
 
@@ -524,40 +524,40 @@ class Admins {
   // SIGNING
   async adminSigns(user) {
     const userObj = await this.getAdmin(user.id);
-    return Object.entries(userObj).length == 0 ? true : userObj.signs;
+    return !userObj ? true : userObj.signs;
   }
 
   async enableSigning(user) {
     const userId = user.id;
 
-    const userObj = await this.getAdmin(userId);
+    let userObj = await this.getAdmin(userId);
 
     if (!userObj) {
-      console.log('Trying to make sign a non-existent admin.');
-      return false;
+      userObj = await this.addAdmin(user, { signs: true });
+      console.log("Admin was just added after calling /sign on.");
     }
 
     if (userObj.signs)
       return true;
 
-    await this.setAdmin(userId, { signs: userObj.signs });
+    await this.setAdmin(userId, { signs: true });
     return true;
   }
 
   async disableSigning(user) {
     const userId = user.id;
 
-    const userObj = await this.getUser(userId);
+    let userObj = await this.getAdmin(userId);
 
     if (!userObj) {
-      console.log('Trying to disable signing for a non-existent admin.');
-      return false;
+      userObj = await this.addAdmin(user, { signs: false });
+      console.log("Admin was just added after calling /sign off.");
     }
 
-    if (!userObj.signs)
+    if (userObj.signs)
       return true;
 
-    await this.setAdmin(userId, { signs: userObj.signs });
+    await this.setAdmin(userId, { signs: false });
     return true;
   }
 

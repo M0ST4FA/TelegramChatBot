@@ -19,9 +19,9 @@ export default class MessageHandler {
 
     // The functions takes into account the state of the user
     if (chatId == BotInfo.ADMIN_CHAT_ID)
-      quote = (await UserInfo.getSenderMessage(msg, false)).senderMsg;
-    else
       quote = (await UserInfo.getResponderMessage(msg, false)).responderMsg;
+    else
+      quote = (await UserInfo.getSenderMessage(msg, false)).senderMsg;
 
     text += `\n${quote}`;
     text = text.trim();
@@ -45,6 +45,7 @@ export default class MessageHandler {
       textOption,
       textQuoteOption,
       captionOption,
+      quote
     }
   }
 
@@ -65,6 +66,26 @@ export default class MessageHandler {
       sentMessageInOppositeChat = bot.sendAudio(sendToChatId, msg.audio.file_id, options);
     else if (msg.voice)
       sentMessageInOppositeChat = bot.sendAudio(sendToChatId, msg.voice.file_id, options);
+    else if (msg.poll) {
+      const poll = msg.poll;
+
+      if (!msg.forward_from)
+        sentMessageInOppositeChat = bot.sendPoll(sendToChatId, poll.question, poll.options, {
+          is_anonymous: poll.is_anonymous,
+          type: poll.type,
+          allows_multiple_answers: poll.allows_multiple_answers,
+          correct_option_id: poll.correct_option_id || null,
+          explanation: poll.explanation || '',
+          open_period: poll.open_period || null,
+          close_date: poll.close_date || null,
+          is_closed: poll.is_closed,
+          total_voter_count: poll.total_voter_count,
+          reply_to_message_id: options.reply_to_message_id
+        });
+      else
+        sentMessageInOppositeChat = bot.forwardMessage(sendToChatId, msg.chat.id, msg.message_id);
+
+    }
     else if (msg.location)
       sentMessageInOppositeChat = bot.sendLocation(sendToChatId, msg.location.latitude, msg.location.longitude, options);
     else if (msg.contact) {
@@ -100,13 +121,20 @@ export default class MessageHandler {
     else
       await messages.addUserMessage(currentChatId, currentChatMsgId, oppositeChatMsgId)
 
-    if (!msg.text && !msg.location && !msg.contact && !msg.sticker)
+    if (!msg.text && !msg.location && !msg.contact && !msg.sticker && !msg.poll)
       bot.editMessageCaption(text, {
         chat_id: sendToChatId,
         message_id: oppositeChatMsgId,
         caption: options.caption,
         caption_entities: options.caption_entities
       });
+
+    if (msg.sticker || msg.poll)
+      if (options.caption)
+        bot.sendMessage(sendToChatId, options.caption, {
+          ...options,
+          reply_to_message_id: oppositeChatMsgId
+        });
 
     return true;
   }
@@ -135,7 +163,7 @@ export default class MessageHandler {
       return false; // Do not send anything
 
     // PREPARE THE TEXT
-    const { textOption, textQuoteOption, captionOption } = await MessageHandler.#getText(msg);
+    const { textOption, textQuoteOption, captionOption, quote } = await MessageHandler.#getText(msg);
 
     // PREPARE THE OPTIONS
     const replyToMessageIdOption = {
@@ -146,7 +174,8 @@ export default class MessageHandler {
       ...replyToMessageIdOption,
       ...textOption,
       ...textQuoteOption,
-      ...captionOption
+      ...captionOption,
+      quote
     }
 
     // SEND THE MESSAGE
@@ -182,7 +211,7 @@ export default class MessageHandler {
   static async #sendUserMessageToAdminChat(msg) {
 
     // PREPARE THE TEXT
-    const { textOption, textQuoteOption, captionOption } = await MessageHandler.#getText(msg);
+    const { textOption, textQuoteOption, captionOption, quote } = await MessageHandler.#getText(msg);
 
     // PREPARE THE OPTIONS
     const replyToMessage = msg.reply_to_message;
@@ -195,6 +224,7 @@ export default class MessageHandler {
       ...textOption,
       ...textQuoteOption,
       ...captionOption,
+      quote
     }
 
     // SEND THE MESSAGE

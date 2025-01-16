@@ -8,7 +8,7 @@ class Messages {
     this.#instance.#keyMappingA2U.delete(value.adminMessageId);
   }
 
-  #messages = new QuickLRU({ maxSize: 10000, onEviction: Messages.#onEvection });
+  #messages = new QuickLRU({ maxSize: 3000, onEviction: Messages.#onEvection });
   #keyMappingA2U = new Map();
 
   constructor() {

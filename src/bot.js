@@ -47,7 +47,6 @@ bot.on('message', async (msg) => {
 
 bot.on('edited_message_text', async (msg) => {
 
-  const msgId = msg.message_id;
   const msgChatId = msg.chat.id;
 
   if (msgChatId == BotInfo.ADMIN_CHAT_ID) {
@@ -80,7 +79,6 @@ bot.on('edited_message_text', async (msg) => {
 
 bot.on('edited_message_caption', async (msg) => {
 
-  const msgId = msg.message_id;
   const msgChatId = msg.chat.id;
 
   if (msgChatId == BotInfo.ADMIN_CHAT_ID) {
