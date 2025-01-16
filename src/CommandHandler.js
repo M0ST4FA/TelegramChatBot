@@ -96,7 +96,7 @@ export default class CommandHandler {
 
     if (!userMessage) {
       sendDiagnosticMessage(DiagnosticMessage.MESSAGE_NOT_PRESENT_BOT_DATA_STRUCTURES, BotInfo.ADMIN_CHAT_ID, { reply_to_message_id: adminMsg.message_id });
-      return {};
+      return null;
     }
 
     return userMessage;
@@ -206,14 +206,14 @@ export default class CommandHandler {
       }
 
     } else if (msgText == '/bannedUsers') {
-      const bndChatIds = await getBannedChatIds();
+      const bndChatIds = await users.getBannedUserIds();
 
       if (bndChatIds.length == 0) {
         sendDiagnosticMessage(DiagnosticMessage.NO_BANNED_USERS_EXIST, BotInfo.ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id })
         return true;
       }
 
-      sendDiagnosticMessage(DiagnosticMessage.DISPLAYING_BANNED_USERS_NOW, BotInfo.ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id })
+      await sendDiagnosticMessage(DiagnosticMessage.DISPLAYING_BANNED_USERS_NOW, BotInfo.ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id })
       for (const chatId of bndChatIds) {
         bot.getChatMember(chatId, chatId)
           .then(async member => {
@@ -319,7 +319,7 @@ export default class CommandHandler {
 
       const message = await CommandHandler.#mapForwardedMessageToUserChatID(replyToMessage);
 
-      if (Object.entries(message).length > 0)
+      if (message)
         banChat(message.userChatId, msg.message_id);
 
     }
@@ -327,7 +327,7 @@ export default class CommandHandler {
 
       const message = await CommandHandler.#mapForwardedMessageToUserChatID(replyToMessage);
 
-      if (Object.entries(message).length > 0)
+      if (message)
         unbanChat(message.userChatId, msg.message_id);
 
     }

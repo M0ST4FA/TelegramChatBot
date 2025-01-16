@@ -238,7 +238,7 @@ class Users {
       }
     })
 
-    return chats.map(chat => chat.userId);
+    return new Set(chats.map(chat => chat.userId));
   }
 
   static #addUserDB = async function (user, { banned = false, privateMode = false }) {
@@ -340,8 +340,8 @@ class Users {
 
   // BANNING
   async isUserBanned(user) {
-    const userObj = await this.getUser(user.id);
-    return !userObj ? false : userObj.banned;
+    const userId = BigInt(user.id);
+    return this.#bannedUserIds.has(userId);
   }
 
   async getBannedUserIds() {
@@ -349,12 +349,13 @@ class Users {
   }
 
   async banUser(user) {
-    const userId = user.id;
+    const userId = BigInt(user.id);
 
     let userObj = await this.getUser(userId);
 
     if (!userObj) {
       userObj = await this.addUser(user, { banned: true });
+      this.#bannedUserIds.add(userId);
       console.log('User was not found. Added a new user (in a banned state).');
     }
 
@@ -362,16 +363,18 @@ class Users {
       return true;
 
     await this.setUser(user, { banned: true });
+    this.#bannedUserIds.add(userId);
     return true;
   }
 
   async unbanUser(user) {
-    const userId = user.id;
+    const userId = BigInt(user.id);
 
     let userObj = await this.getUser(userId);
 
     if (!userObj) {
       userObj = await this.addUser(user, { banned: false });
+      this.#bannedUserIds.delete(userId);
       console.log('User was not found. Added a new user (in a non-banned state).');
     }
 
@@ -379,6 +382,7 @@ class Users {
       return true;
 
     await this.setUser(user, { banned: false });
+    this.#bannedUserIds.delete(userId);
     return true;
   }
 
