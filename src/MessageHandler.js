@@ -122,7 +122,7 @@ export default class MessageHandler {
       await messages.addUserMessage(currentChatId, currentChatMsgId, oppositeChatMsgId)
 
     if (!msg.text && !msg.location && !msg.contact && !msg.sticker && !msg.poll)
-      bot.editMessageCaption(text, {
+      bot.editMessageCaption(options.text, {
         chat_id: sendToChatId,
         message_id: oppositeChatMsgId,
         caption: options.caption,
