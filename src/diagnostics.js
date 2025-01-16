@@ -1,8 +1,8 @@
-const { getFullNameFromUser, getUserNameFromUser } = require("./common");
-const { BOT_NAME, bot, ADMIN_COMMANDS_MESSAGE_EN, ADMIN_COMMANDS_MESSAGE_AR, USER_COMMANDS_MESSAGE_AR, USER_COMMANDS_MESSAGE_EN, USER_WELCOMING_MESSAGE_AR, USER_WELCOMING_MESSAGE_EN, ADMIN_CHAT_ID } = require("./constants");
-const { settings, users } = require('./settings');
+import { UserInfo } from "./common.js";
+import { bot, BotInfo, TextMessages } from './constants.js'
+import { settings, users } from "./settings.js";
 
-exports.DiagnosticMessage = Object.freeze({
+export const DiagnosticMessage = Object.freeze({
   DELETED_MESSAGE: 0,
   EDITED_MESSAGE_TEXT: 1,
   EDITED_MESSAGE_CAPTION: 2,
@@ -31,9 +31,9 @@ exports.DiagnosticMessage = Object.freeze({
   USER_WELCOMING_MESSAGE: 25,
   USER_CHAT_HAS_ALREADY_STARTED: 26
 })
-exports.sendDiagnosticMessage = async function (messageType, chatId, opts = {}) {
+export const sendDiagnosticMessage = async function (messageType, chatId, opts = {}) {
 
-  const botSenderMsg = `>${BOT_NAME}`;
+  const botSenderMsg = `>${BotInfo.BOT_NAME}`;
   const options = {
     parse_mode: "MarkdownV2",
     ...opts
@@ -47,12 +47,10 @@ exports.sendDiagnosticMessage = async function (messageType, chatId, opts = {}) 
 
   if (user) {
     userIsPrivate = await users.isUserPrivate(user);
-    username = getUserNameFromUser(user);
-    userFullName = getFullNameFromUser(user);
+    username = UserInfo.getUserNameFromUser(user);
+    userFullName = UserInfo.getFullNameFromUser(user);
     userId = user.id;
   }
-
-  const DiagnosticMessage = exports.DiagnosticMessage;
 
   switch (messageType) {
     case DiagnosticMessage.DELETED_MESSAGE:
@@ -161,25 +159,25 @@ exports.sendDiagnosticMessage = async function (messageType, chatId, opts = {}) 
       break;
     case DiagnosticMessage.ADMIN_COMMANDS_MESSAGE:
       if (settings.language() == "ar")
-        bot.sendMessage(chatId, `${ADMIN_COMMANDS_MESSAGE_AR}\n${botSenderMsg}`, options);
+        bot.sendMessage(chatId, `${TextMessages.ADMIN_COMMANDS_MESSAGE_AR}\n${botSenderMsg}`, options);
       else
-        bot.sendMessage(chatId, `${ADMIN_COMMANDS_MESSAGE_EN}\n${botSenderMsg}`, options);
+        bot.sendMessage(chatId, `${TextMessages.ADMIN_COMMANDS_MESSAGE_EN}\n${botSenderMsg}`, options);
       break;
     case DiagnosticMessage.USER_COMMANDS_MESSAGE:
       if (settings.language() == "ar")
-        bot.sendMessage(chatId, `${USER_COMMANDS_MESSAGE_AR}\n${botSenderMsg}`, options);
+        bot.sendMessage(chatId, `${TextMessages.USER_COMMANDS_MESSAGE_AR}\n${botSenderMsg}`, options);
       else
-        bot.sendMessage(chatId, `${USER_COMMANDS_MESSAGE_EN}\n${botSenderMsg}`, options);
+        bot.sendMessage(chatId, `${TextMessages.USER_COMMANDS_MESSAGE_EN}\n${botSenderMsg}`, options);
       break;
     case DiagnosticMessage.UNKNOWN_COMMAND:
       if (settings.language() == "ar")
         bot.sendMessage(chatId, `أمر غير معروف\\.\n${botSenderMsg}`, options);
       else
         bot.sendMessage(chatId, `Unknown command\\.\n${botSenderMsg}`, options);
-      if (chatId == ADMIN_CHAT_ID)
-        exports.sendDiagnosticMessage(DiagnosticMessage.ADMIN_COMMANDS_MESSAGE, chatId);
+      if (chatId == BotInfo.ADMIN_CHAT_ID)
+        sendDiagnosticMessage(DiagnosticMessage.ADMIN_COMMANDS_MESSAGE, chatId);
       else
-        exports.sendDiagnosticMessage(DiagnosticMessage.USER_COMMANDS_MESSAGE, chatId);
+        sendDiagnosticMessage(DiagnosticMessage.USER_COMMANDS_MESSAGE, chatId);
       break;
     case DiagnosticMessage.USER_MESSAGES_WILL_BE_SIGNED_MESSAGE:
       if (settings.language() == "ar")
@@ -219,9 +217,9 @@ exports.sendDiagnosticMessage = async function (messageType, chatId, opts = {}) 
       break;
     case DiagnosticMessage.USER_WELCOMING_MESSAGE:
       if (settings.language() == "ar")
-        bot.sendMessage(chatId, `${USER_WELCOMING_MESSAGE_AR}\n${botSenderMsg}`, options);
+        bot.sendMessage(chatId, `${TextMessages.USER_WELCOMING_MESSAGE_AR}\n${botSenderMsg}`, options);
       else
-        bot.sendMessage(chatId, `${USER_WELCOMING_MESSAGE_EN}\n${botSenderMsg}`, options);
+        bot.sendMessage(chatId, `${TextMessages.USER_WELCOMING_MESSAGE_EN}\n${botSenderMsg}`, options);
       break;
     case DiagnosticMessage.USER_CHAT_HAS_ALREADY_STARTED:
       if (settings.language() == "ar")

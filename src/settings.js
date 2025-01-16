@@ -1,179 +1,5 @@
-const { prisma } = require("./constants");
-
-async function testConnection() {
-  try {
-    await prisma.$connect();
-    console.log('Connection to database successful!');
-  } catch (error) {
-    console.error('Error connecting to the database:', error);
-  } finally {
-    await prisma.$disconnect();
-  }
-}
-testConnection();
-
-// SIGNING
-exports.adminSigns = async function (user) {
-  const sUserId = user.id;
-
-  const userObj = await prisma.admin.findUnique({
-    where: {
-      userId: sUserId
-    },
-    select: {
-      signs: true
-    }
-  })
-
-  return !userObj ? true : userObj.signs;
-}
-
-exports.doNotSignMessagesOfAdmin = async function (user) {
-  const sUserId = user.id;
-
-  await prisma.admin.upsert({
-    where: {
-      userId: sUserId
-    },
-    update: {
-      signs: false
-    },
-    create: {
-      userId: sUserId,
-      signs: false
-    }
-  }
-  )
-}
-
-exports.signMessagesOfAdmin = async function (user) {
-  const sUserId = user.id;
-
-  await prisma.admin.upsert({
-    where: {
-      userId: sUserId
-    },
-    update: {
-      signs: true
-    },
-    create: {
-      userId: sUserId,
-      signs: true
-    }
-  }
-  )
-}
-
-// REPLIES
-// repliedToMessagesAreShown
-const repliesAreShown = async function () {
-  const obj = await prisma.setting.findUnique({
-    where: {
-      key: "replies"
-    }
-  })
-
-  return obj.value == "true" ? true : false;
-}
-
-const showReplies = async function () {
-  await prisma.setting.update({
-    where: {
-      key: "replies"
-    },
-    data: {
-      value: "true"
-    }
-  })
-}
-
-const hideReplies = async function () {
-  await prisma.setting.update({
-    where: {
-      key: "replies"
-    },
-    data: {
-      value: "false"
-    }
-  })
-}
-
-// FORWARDING
-const forwardMode = async function () {
-  const obj = await prisma.setting.findUnique({
-    where: {
-      key: "forwardMode"
-    }
-  })
-
-  return obj.value == "true" ? true : false;
-}
-
-const enableForwardMode = async function () {
-  await prisma.setting.update({
-    where: {
-      key: "forwardMode"
-    },
-    data: {
-      value: "true"
-    }
-  })
-}
-
-const disableForwardMode = async function () {
-  await prisma.setting.update({
-    where: {
-      key: "forwardMode"
-    },
-    data: {
-      value: "false"
-    }
-  })
-}
-
-// LANGUAGE
-const setArabicLanguage = async function () {
-  await prisma.setting.update({
-    where: {
-      key: "language"
-    },
-    data: {
-      value: "ar"
-    }
-  })
-}
-
-const setEnglishLanguage = async function () {
-  await prisma.setting.update({
-    where: {
-      key: "language"
-    },
-    data: {
-      value: "en"
-    }
-  })
-}
-
-const language = async function () {
-  const obj = await prisma.setting.findUnique({
-    where: {
-      key: "language"
-    }
-  })
-
-  return obj.value;
-}
-
-// INITIALIZED
-const initialized = async function () {
-  const obj = await prisma.setting.findUnique({
-    where: {
-      key: "initialized"
-    }
-  })
-
-  return obj.value;
-}
+import { prisma } from './constants.js'
+import QuickLRU from 'quick-lru'
 
 class Settings {
   #replies;
@@ -186,20 +12,145 @@ class Settings {
     this.#forwardMode = null;
     this.#language = null;
     this.#initialized = null;
+    this.testConnection();
   }
+
+  async testConnection() {
+    try {
+      await prisma.$connect();
+      console.log('Connection to database successful!');
+    } catch (error) {
+      console.error('Error connecting to the database:', error);
+    } finally {
+      await prisma.$disconnect();
+    }
+  }
+
+  // REPLIES
+  // repliedToMessagesAreShown
+  static #repliesAreShownDB = async function () {
+    const obj = await prisma.setting.findUnique({
+      where: {
+        key: "replies"
+      }
+    })
+
+    return obj.value == "true" ? true : false;
+  }
+
+  static #showRepliesDB = async function () {
+    await prisma.setting.update({
+      where: {
+        key: "replies"
+      },
+      data: {
+        value: "true"
+      }
+    })
+  }
+
+  static #hideRepliesDB = async function () {
+    await prisma.setting.update({
+      where: {
+        key: "replies"
+      },
+      data: {
+        value: "false"
+      }
+    })
+  }
+
+  // FORWARDING
+  static #forwardModeDB = async function () {
+    const obj = await prisma.setting.findUnique({
+      where: {
+        key: "forwardMode"
+      }
+    })
+
+    return obj.value == "true" ? true : false;
+  }
+
+  static #enableForwardModeDB = async function () {
+    await prisma.setting.update({
+      where: {
+        key: "forwardMode"
+      },
+      data: {
+        value: "true"
+      }
+    })
+  }
+
+  static #disableForwardModeDB = async function () {
+    await prisma.setting.update({
+      where: {
+        key: "forwardMode"
+      },
+      data: {
+        value: "false"
+      }
+    })
+  }
+
+  // LANGUAGE
+  static #setArabicLanguageDB = async function () {
+    await prisma.setting.update({
+      where: {
+        key: "language"
+      },
+      data: {
+        value: "ar"
+      }
+    })
+  }
+
+  static #setEnglishLanguageDB = async function () {
+    await prisma.setting.update({
+      where: {
+        key: "language"
+      },
+      data: {
+        value: "en"
+      }
+    })
+  }
+
+  static #languageDB = async function () {
+    const obj = await prisma.setting.findUnique({
+      where: {
+        key: "language"
+      }
+    })
+
+    return obj.value;
+  }
+
+  // INITIALIZED
+  static #initializedDB = async function () {
+    const obj = await prisma.setting.findUnique({
+      where: {
+        key: "initialized"
+      }
+    })
+
+    return obj.value;
+  }
+
 
   static async init() {
 
-    const settingsPromiseArr = await Promise.allSettled([repliesAreShown(), forwardMode(), language(), initialized()]);
+    if (Settings.#instance.#initialized)
+      return;
 
-    let settings = new Settings();
+    const settingsPromiseArr = await Promise.allSettled([Settings.#repliesAreShownDB(), Settings.#forwardModeDB(), Settings.#languageDB(), Settings.#initializedDB()]);
 
-    settings.#replies = settingsPromiseArr[0].value;
-    settings.#forwardMode = settingsPromiseArr[1].value;
-    settings.#language = settingsPromiseArr[2].value;
-    settings.#initialized = settingsPromiseArr[3].value;
+    Settings.#instance.#replies = settingsPromiseArr[0].value;
+    Settings.#instance.#forwardMode = settingsPromiseArr[1].value;
+    Settings.#instance.#language = settingsPromiseArr[2].value;
+    Settings.#instance.#initialized = settingsPromiseArr[3].value;
 
-    if (settings.#initialized == false) {
+    if (Settings.#instance.#initialized == false) {
       await prisma.setting.update({
         where: {
           key: "initialized"
@@ -208,23 +159,22 @@ class Settings {
           value: true
         }
       })
-      this.#initialized = true;
+      settings.#initialized = true;
     }
 
-    Settings.#instance = settings;
   }
 
   replies() {
     return this.#replies;
   }
 
-  setReplies(shown = true) {
+  async setReplies(shown = true) {
     if (shown) {
       this.#replies = true;
-      showReplies();
+      await Settings.#showRepliesDB();
     } else {
       this.#replies = false;
-      hideReplies();
+      await Settings.#hideRepliesDB();
     }
   }
 
@@ -232,13 +182,13 @@ class Settings {
     return this.#forwardMode;
   }
 
-  setForwardMode(set = true) {
+  async setForwardMode(set = true) {
     if (set) {
       this.#forwardMode = true;
-      enableForwardMode();
+      await Settings.#enableForwardModeDB();
     } else {
       this.#forwardMode = false;
-      disableForwardMode();
+      await Settings.#disableForwardModeDB();
     }
   }
 
@@ -246,13 +196,13 @@ class Settings {
     return this.#language;
   }
 
-  setLanguage(lang) {
+  async setLanguage(lang) {
     if (lang == "ar") {
       this.#language = "ar";
-      setArabicLanguage();
+      await Settings.#setArabicLanguageDB();
     } else {
       this.#language = "en";
-      setEnglishLanguage();
+      await Settings.#setEnglishLanguageDB();
     }
   }
 
@@ -262,7 +212,8 @@ class Settings {
 
   static #instance = new Settings();
 
-  static instance() {
+  static async instance() {
+    await Settings.init();
     return Settings.#instance;
   };
 
@@ -270,47 +221,53 @@ class Settings {
 
 // USER ----------------------------------
 
-const getBannedChatIds = async function () {
-  const chats = await prisma.user.findMany({
-    where: {
-      banned: true
-    },
-    select: {
-      userId: true
-    }
-  })
-
-  return chats.map(chat => chat.userId);
-}
-
-const addUser = async function (user, { banned = false, private = false }) {
-  const sUserId = user.id;
-
-  console.log(user);
-
-  return await prisma.user.create({
-    data: {
-      userId: sUserId,
-      banned,
-      private
-    }
-  });
-}
-const getUser = async function (userId) {
-
-  const sUserId = BigInt(userId)
-
-  return await prisma.user.findUnique({
-    where: {
-      userId: sUserId
-    }
-  });
-}
-
 class Users {
 
-  #users = new Map();
+  #users = new QuickLRU({ maxSize: 1000 });
+  #bannedUserIds = new Set();
   constructor() {
+  }
+
+  static #getBannedChatIdsDB = async function () {
+    const chats = await prisma.user.findMany({
+      where: {
+        banned: true
+      },
+      select: {
+        userId: true
+      }
+    })
+
+    return chats.map(chat => chat.userId);
+  }
+
+  static #addUserDB = async function (user, { banned = false, privateMode = false }) {
+    const sUserId = user.id;
+
+    console.log(user);
+
+    return await prisma.user.create({
+      data: {
+        userId: sUserId,
+        banned,
+        private: privateMode
+      }
+    });
+  }
+
+  static #getUserDB = async function (userId) {
+
+    const sUserId = BigInt(userId)
+
+    return await prisma.user.findUnique({
+      where: {
+        userId: sUserId
+      }
+    });
+  }
+
+  static async init() {
+    Users.#instance.#bannedUserIds = await Users.#getBannedChatIdsDB();
   }
 
   async getUser(userId) {
@@ -319,7 +276,7 @@ class Users {
     if (user)
       return user;
 
-    const userObj = await getUser(userId);
+    const userObj = await Users.#getUserDB(userId);
 
     if (userObj) {
       this.#users.set(userObj.userId, userObj);
@@ -361,8 +318,6 @@ class Users {
     if (!(bannedChanged || privateChanged))
       return userObj;
 
-    this.#users.set(userId, userObj);
-
     await prisma.user.update({
       where: {
         userId
@@ -378,7 +333,7 @@ class Users {
 
   // Adds the user immediately and then sends a request to the database
   async addUser(user, { banned = false, privateMode = false }) {
-    const userObj = await addUser(user, { banned, private: privateMode });
+    const userObj = await Users.#addUserDB(user, { banned, private: privateMode });
     this.#users.set(userObj.userId, userObj);
 
     return userObj;
@@ -391,7 +346,7 @@ class Users {
   }
 
   async getBannedUserIds() {
-    return await getBannedChatIds();
+    return this.#bannedUserIds;
   }
 
   async banUser(user) {
@@ -447,7 +402,7 @@ class Users {
     if (userObj.private)
       return true;
 
-    await this.setUser(userId, { private: true });
+    await this.setUser(user, { privateMode: true });
     return true;
   }
 
@@ -464,13 +419,14 @@ class Users {
     if (!userObj.private)
       return true;
 
-    await this.setUser(userId, { private: false });
+    await this.setUser(user, { privateMode: false });
     return true;
   }
 
   static #instance = new Users();
 
-  static instance() {
+  static async instance() {
+    await Users.init();
     return this.#instance;
   }
 
@@ -478,31 +434,31 @@ class Users {
 
 // ADMIN ---------------------------------
 
-const addAdmin = async function (admin) {
-  const sUserId = admin.id;
-
-  return await prisma.admin.create({
-    data: {
-      userId: sUserId,
-      signs: true
-    }
-  });
-}
-
-const getAdmin = async function (userId) {
-  const sUserId = BigInt(userId)
-
-  return await prisma.admin.findUnique({
-    where: {
-      userId: sUserId
-    }
-  });
-}
-
 class Admins {
 
-  #admins = new Map();
+  #admins = new QuickLRU({ maxSize: 30 });
   constructor() {
+  }
+
+  static #addAdminDB = async function (admin) {
+    const sUserId = admin.id;
+
+    return await prisma.admin.create({
+      data: {
+        userId: sUserId,
+        signs: true
+      }
+    });
+  }
+
+  static #getAdminDB = async function (userId) {
+    const sUserId = BigInt(userId)
+
+    return await prisma.admin.findUnique({
+      where: {
+        userId: sUserId
+      }
+    });
   }
 
   async getAdmin(userId) {
@@ -511,7 +467,7 @@ class Admins {
     if (user)
       return user;
 
-    const userObj = await getAdmin(userId);
+    const userObj = await Admins.#getAdminDB(userId);
 
     if (userObj) {
       this.#admins.set(userObj.userId, userObj);
@@ -546,8 +502,6 @@ class Admins {
     if (!signsChanged)
       return userObj;
 
-    this.#admins.set(userId, userObj);
-
     await prisma.admin.update({
       where: {
         userId
@@ -561,7 +515,7 @@ class Admins {
   };
 
   async addAdmin(user, { signs }) {
-    const userObj = await addAdmin(user, { signs });
+    const userObj = await Admins.#addAdminDB(user, { signs });
     this.#admins.set(userObj.userId, userObj);
 
     return userObj;
@@ -609,15 +563,11 @@ class Admins {
 
   static #instance = new Admins();
 
-  static instance() {
+  static async instance() {
     return this.#instance;
   }
 }
 
-exports.settings = Settings.instance();
-exports.users = Users.instance();
-exports.admins = Admins.instance();
-
-exports.initSettings = async function () {
-  await Settings.init();
-}
+export const settings = await Settings.instance();
+export const users = await Users.instance();
+export const admins = await Admins.instance();
