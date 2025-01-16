@@ -5,153 +5,152 @@ import CommandHandler from './CommandHandler.js';
 
 export default class MessageHandler {
 
-  static async #sendAdminMessageToUserChat(msg) {
+  // SENDING
 
-    // Use reply_to_message_id to get the original message ID
-    const replyToMessage = msg.reply_to_message;
-    const messageIdInAdminChat = replyToMessage.message_id;
+  // Helper methods
+  static async #getText(msg) {
+    const chatId = msg.chat.id;
 
-    // If the message is not forwarded from any user
-    if (!(await messages.isMessageSentByUser(replyToMessage)))
-      return false;
-
-    // Find the chat id and message id in user chat
-    const { userChatId, userMessageId: messageIdInUserChat } = await messages.getUserMessageA(messageIdInAdminChat)
-
-    if (!userChatId)
-      return false;
-
+    // Get the text to be sent
     const caption = msg.caption || '';
     let text = msg.text || '';
     text += caption;
+    let quote = ''
 
-    const responderInfo = await UserInfo.getResponderMessage(msg, false); // The function takes into account the state of the user
+    // The functions takes into account the state of the user
+    if (chatId == BotInfo.ADMIN_CHAT_ID)
+      quote = (await UserInfo.getSenderMessage(msg, false)).senderMsg;
+    else
+      quote = (await UserInfo.getResponderMessage(msg, false)).responderMsg;
 
-    const responderMsg = responderInfo.responderMsg;
-
-    text += `\n${responderMsg}`;
+    text += `\n${quote}`;
     text = text.trim();
 
-    // Forward the admin's reply back to the original user
-    let adminSentMsgInUserChat;
-    const replyToMessageIdOption = {
-      reply_to_message_id: settings.replies() ? messageIdInUserChat : undefined
-    }
-
     const captionOption = {
-      caption: responderInfo ? text : undefined, // senderMessage determines whether or not user signs
-      caption_entities: responderMsg ? [
-        { type: 'blockquote', offset: text.indexOf(responderMsg), length: responderMsg.length }
+      caption: quote ? text : undefined, // senderMessage determines whether or not user signs
+      caption_entities: quote ? [
+        { type: 'blockquote', offset: text.indexOf(quote), length: quote.length }
       ] : []
     }
 
-    const responderMessageOption = {
+    const textOption = {
+      text
+    }
+
+    const textQuoteOption = {
       entities: captionOption.caption_entities
     }
 
-    if (!userChatId)
-      return false;
+    return {
+      textOption,
+      textQuoteOption,
+      captionOption,
+    }
+  }
 
-    if (msg.text) {
-      const options = {
-        ...replyToMessageIdOption,
-        ...responderMessageOption
-      }
+  static async #sendMessage(sendToChatId, msg, options) {
+    let sentMessageInOppositeChat;
 
-      adminSentMsgInUserChat = bot.sendMessage(userChatId, text, options);
-    } else if (msg.photo?.length > 0) {
-
-      const options = replyToMessageIdOption;
-      // Send the photo
-      adminSentMsgInUserChat = bot.sendPhoto(userChatId, msg.photo.at(0).file_id, options);
-    } else if (msg.video) {
-
-      const options = replyToMessageIdOption;
-
-      // Send the video
-      adminSentMsgInUserChat = bot.sendVideo(userChatId, msg.video.file_id, options);
-    } else if (msg.sticker) {
-
-      const options = replyToMessageIdOption;
-
-      // Send the sticker
-      adminSentMsgInUserChat = bot.sendSticker(userChatId, msg.sticker.file_id, options);
-    } else if (msg.document) {
-
-      const options = replyToMessageIdOption;
-
-      // Send the document
-      adminSentMsgInUserChat = bot.sendDocument(userChatId, msg.document.file_id, options);
-    } else if (msg.audio) {
-
-      const options = replyToMessageIdOption;
-
-      // Send the audio
-      adminSentMsgInUserChat = bot.sendAudio(userChatId, msg.audio.file_id, options);
-    } else if (msg.voice) {
-
-      const options = replyToMessageIdOption;
-
-      // Send the audio
-      adminSentMsgInUserChat = bot.sendAudio(userChatId, msg.voice.file_id, options);
-    } else if (msg.location) {
-      const options = replyToMessageIdOption;
-
-      // Send the location
-      adminSentMsgInUserChat = bot.sendLocation(userChatId, msg.location.latitude, msg.location.longitude, options);
-    } else if (msg.contact) {
+    if (msg.text)
+      sentMessageInOppositeChat = bot.sendMessage(sendToChatId, options.text, options);
+    else if (msg.photo?.length > 0)
+      sentMessageInOppositeChat = bot.sendPhoto(sendToChatId, msg.photo.at(0).file_id, options);
+    else if (msg.video)
+      sentMessageInOppositeChat = bot.sendVideo(sendToChatId, msg.video.file_id, options);
+    else if (msg.sticker)
+      sentMessageInOppositeChat = bot.sendSticker(sendToChatId, msg.sticker.file_id, options);
+    else if (msg.document)
+      sentMessageInOppositeChat = bot.sendDocument(sendToChatId, msg.document.file_id, options);
+    else if (msg.audio)
+      sentMessageInOppositeChat = bot.sendAudio(sendToChatId, msg.audio.file_id, options);
+    else if (msg.voice)
+      sentMessageInOppositeChat = bot.sendAudio(sendToChatId, msg.voice.file_id, options);
+    else if (msg.location)
+      sentMessageInOppositeChat = bot.sendLocation(sendToChatId, msg.location.latitude, msg.location.longitude, options);
+    else if (msg.contact) {
 
       const contact = msg.contact;
 
-      const options = {
-        ...replyToMessageIdOption,
+      const opts = {
+        reply_to_message_id: options.reply_to_message_id,
         last_name: contact.last_name,
         vcard: contact.vcard
       }
 
       // Send the contact
-      adminSentMsgInUserChat = bot.sendContact(userChatId,
+      sentMessageInOppositeChat = bot.sendContact(sendToChatId,
         contact.phone_number,
         contact.first_name,
-        options
+        opts
       );
     } else {
-      bot.sendMessage(BotInfo.ADMIN_CHAT_ID, "🔴 Unknown message type.");
+      bot.sendMessage(sendToChatId, "🔴 Unknown message type.");
+      return false;
     }
 
-    const userChatMsg = await adminSentMsgInUserChat;
-    const adminMsgId = msg.message_id;
-    const userMsgId = userChatMsg.message_id;
-    await messages.addAdminMessage(userChatId, userMsgId, adminMsgId)
+    const currentChatId = msg.chat.id;
 
-    if (!msg.text && !msg.location && !msg.contact && !msg.sticker) {
+    const msgInOppositeChat = await sentMessageInOppositeChat;
+
+    const currentChatMsgId = msg.message_id;
+    const oppositeChatMsgId = msgInOppositeChat.message_id;
+
+    if (currentChatId == BotInfo.ADMIN_CHAT_ID)
+      await messages.addAdminMessage(sendToChatId, oppositeChatMsgId, currentChatMsgId)
+    else
+      await messages.addUserMessage(currentChatId, currentChatMsgId, oppositeChatMsgId)
+
+    if (!msg.text && !msg.location && !msg.contact && !msg.sticker)
       bot.editMessageCaption(text, {
-        chat_id: userChatId,
-        message_id: userMsgId,
-        ...captionOption
+        chat_id: sendToChatId,
+        message_id: oppositeChatMsgId,
+        caption: options.caption,
+        caption_entities: options.caption_entities
       });
-    }
 
     return true;
   }
 
-  static async sendAdminMessage(msg) {
+  static async #sendAdminMessageToUserChat(msg) {
 
-    // Check if the admin's message is a reply to a forwarded message
+    // GET INFORMATION ABOUT THE MESSAGE THE ADMIN IS REPLYING TO
     const replyToMessage = msg.reply_to_message;
+    let messageSentByUser = false;
 
-    // If the message is not replying to any message, then the bot has nothing to do with it
-    if (!replyToMessage || !replyToMessage.message_id)
-      return false;
+    // Get message info
+    const messageBeingSent = await messages.getMessage(replyToMessage);
+    if (messageBeingSent)
+      messageSentByUser = messageBeingSent.forwarded;
 
-    // Handle potential commands first
-    if (await CommandHandler.handleAdminChatReplyCommands(msg))
-      return true;
+    // If the message is not in bot data structures or has not been sent by user
+    if (!messageSentByUser)
+      return false; // Do not send anything
 
-    if (await MessageHandler.#sendAdminMessageToUserChat(msg))
-      return true;
+    // Find the chat id and message id in user chat
+    const userChatId = messageBeingSent.userChatId;
+    const messageIdInUserChat = messageBeingSent.userMessageId;
 
-    return false;
+    // If the message is not found in user chat (probably not sent by the user or the chat has been deleted from the database)
+    if (!userChatId)
+      return false; // Do not send anything
+
+    // PREPARE THE TEXT
+    const { textOption, textQuoteOption, captionOption } = await MessageHandler.#getText(msg);
+
+    // PREPARE THE OPTIONS
+    const replyToMessageIdOption = {
+      reply_to_message_id: settings.replies() ? messageIdInUserChat : undefined
+    }
+
+    const options = {
+      ...replyToMessageIdOption,
+      ...textOption,
+      ...textQuoteOption,
+      ...captionOption
+    }
+
+    // SEND THE MESSAGE
+    return MessageHandler.#sendMessage(userChatId, msg, options);
   }
 
   static async #forwardUserMessageToAdminChat(msg) {
@@ -182,135 +181,44 @@ export default class MessageHandler {
 
   static async #sendUserMessageToAdminChat(msg) {
 
-    // Common constants
-    const userChatId = msg.chat.id;
-    const messageIdInUserChat = msg.message_id;
+    // PREPARE THE TEXT
+    const { textOption, textQuoteOption, captionOption } = await MessageHandler.#getText(msg);
+
+    // PREPARE THE OPTIONS
+    const replyToMessage = msg.reply_to_message;
+    const replyToMessageIdOption = {
+      reply_to_message_id: replyToMessage ? (await messages.getMessage(replyToMessage)).adminMessageId : undefined
+    }
+
+    const options = {
+      ...replyToMessageIdOption,
+      ...textOption,
+      ...textQuoteOption,
+      ...captionOption,
+    }
+
+    // SEND THE MESSAGE
+    return MessageHandler.#sendMessage(BotInfo.ADMIN_CHAT_ID, msg, options);
+  }
+
+  // Main methods
+  static async sendAdminMessage(msg) {
+
+    // Check if the admin's message is a reply to a forwarded message
     const replyToMessage = msg.reply_to_message;
 
-    // This will be the text of text messages and the caption of other types of messages
-    const caption = msg.caption || '';
-    let text = msg.text || '';
-    text += caption;
+    // If the message is not replying to any message, then the bot has nothing to do with it
+    if (!replyToMessage || !replyToMessage.message_id)
+      return false;
 
-    const senderInfo = await UserInfo.getSenderMessage(msg, false); // The function takes into account the state of the user
+    // Handle potential commands first
+    if (await CommandHandler.handleAdminChatReplyCommands(msg))
+      return true;
 
-    const senderMessage = senderInfo?.senderMsg || '';
+    if (await MessageHandler.#sendAdminMessageToUserChat(msg))
+      return true;
 
-    text += '\n' + senderMessage;
-    text = text.trim();
-
-    // Common options
-    const replyToMessageIdOption = {
-      reply_to_message_id: undefined
-    }
-
-    if (replyToMessage) {
-      const message = await messages.getMessage(replyToMessage);
-      replyToMessageIdOption.reply_to_message_id = message.adminMessageId;
-    }
-
-    const captionOption = {
-      caption: senderInfo ? text : undefined, // senderMessage determines whether or not user signs
-      caption_entities: senderInfo ? [
-        { type: 'blockquote', offset: text.indexOf(senderMessage), length: senderMessage.length }
-      ] : []
-    }
-
-    const senderMessageOption = {
-      entities: captionOption.caption_entities
-    }
-
-    let userSentMsgInAdminChat;
-
-    if (msg.text) {
-
-      const options = {
-        ...replyToMessageIdOption,
-        ...senderMessageOption
-      }
-
-      userSentMsgInAdminChat = bot.sendMessage(BotInfo.ADMIN_CHAT_ID, text, options);
-
-    } else if (msg.photo?.length > 0) {
-
-      const options = replyToMessageIdOption;
-
-      // Send the photo
-      userSentMsgInAdminChat = bot.sendPhoto(BotInfo.ADMIN_CHAT_ID, msg.photo.at(0).file_id, options);
-
-    } else if (msg.video) {
-
-      const options = replyToMessageIdOption;
-
-      // Send the video
-      userSentMsgInAdminChat = bot.sendVideo(BotInfo.ADMIN_CHAT_ID, msg.video.file_id, options);
-
-    } else if (msg.sticker) {
-
-      const options = replyToMessageIdOption;
-
-      // Send the sticker
-      userSentMsgInAdminChat = bot.sendSticker(ADMIN_CHAT_ID, msg.sticker.file_id, options);
-    } else if (msg.document) {
-
-      const options = replyToMessageIdOption;
-
-      // Send the document
-      userSentMsgInAdminChat = bot.sendDocument(BotInfo.ADMIN_CHAT_ID, msg.document.file_id, options);
-    } else if (msg.audio) {
-
-      const options = replyToMessageIdOption;
-
-      // Send the audio
-      userSentMsgInAdminChat = bot.sendAudio(ADMIN_CHAT_ID, msg.audio.file_id, options);
-    } else if (msg.voice) {
-
-      const options = replyToMessageIdOption;
-
-      // Send the audio
-      userSentMsgInAdminChat = bot.sendAudio(BotInfo.ADMIN_CHAT_ID, msg.voice.file_id, options);
-
-    }
-    else if (msg.location) {
-
-      const options = replyToMessageIdOption;
-
-      // Send the location
-      userSentMsgInAdminChat = bot.sendLocation(ADMIN_CHAT_ID, msg.location.latitude, msg.location.longitude, options);
-    } else if (msg.contact) {
-
-      const contact = msg.contact;
-
-      const options = {
-        ...replyToMessageIdOption,
-        last_name: contact.last_name,
-        vcard: contact.vcard
-      }
-
-      // Send the contact
-      userSentMsgInAdminChat = bot.sendContact(BotInfo.ADMIN_CHAT_ID,
-        contact.phone_number,
-        contact.first_name,
-        options
-      );
-    } else {
-      bot.sendMessage(userChatId, "🔴 Unknown message type.");
-    }
-
-    const adminChatMsg = await userSentMsgInAdminChat;
-    const adminChatMsgId = adminChatMsg.message_id;
-    const userChatMsgId = messageIdInUserChat;
-
-    await messages.addUserMessage(userChatId, userChatMsgId, adminChatMsgId)
-
-    if (!msg.text && !msg.location && !msg.contact && !msg.sticker) {
-      bot.editMessageCaption(text, {
-        chat_id: BotInfo.ADMIN_CHAT_ID,
-        message_id: adminChatMsgId,
-        ...captionOption
-      });
-    }
-
+    return false;
   }
 
   static async sendUserMessage(msg) {
@@ -324,6 +232,7 @@ export default class MessageHandler {
     return true;
   }
 
+  // EDITING
   static async editAdminMessageText(msg) {
 
     // Get basic message info
