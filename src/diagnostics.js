@@ -44,7 +44,7 @@ export const sendDiagnosticMessage = async function (messageType, chatId, opts =
   }
 
   const getEntities = function (msg) {
-    return { entities: [{ type: 'blockquote', offset: msg.indexOf(botSenderMsg), length: botSenderMsg.length }] }
+    return { entities: [{ type: 'blockquote', offset: msg.lastIndexOf(botSenderMsg), length: botSenderMsg.length }] }
   }
 
   const user = opts.user;
@@ -477,7 +477,7 @@ export const sendDiagnosticMessage = async function (messageType, chatId, opts =
         });
       }
       else {
-        const msg = `"Your chat has already started. Send whatever message you want and we will hopefully respond ASAP."\n${botSenderMsg}`;
+        const msg = `Your chat has already started. Send whatever message you want and we will hopefully respond ASAP.\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
           ...(getEntities(msg))

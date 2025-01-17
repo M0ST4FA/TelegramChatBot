@@ -31,9 +31,13 @@ class Messages {
       forwarded
     }
 
-    await prisma.message.create({
-      data
+    const m = await prisma.message.create({
+      data: {
+        ...data
+      }
     })
+
+    console.log('Message returned by prisma:', m);
 
     this.#messages.set(data.userMessageId, data);
     this.#keyMappingA2U.set(data.adminMessageId, data.userMessageId);
@@ -57,7 +61,6 @@ class Messages {
     if (chatId == BotInfo.ADMIN_CHAT_ID) {
       const userId = this.#keyMappingA2U.get(sMessageId);
 
-      // This handles the case where the message is not in the cache
       if (userId)
         message = this.#messages.get(userId);
     } else
@@ -82,7 +85,7 @@ class Messages {
       })
 
     if (!message) {
-      console.error("Couldn't find message.");
+      console.error(`Couldn't find message with id ${sMessageId} in database. Likely it is not a message related to the bot.`);
       return null;
     }
 
@@ -111,7 +114,7 @@ class Messages {
     else
       message = await this.getAdminMessageU(msg.message_id);
 
-    return !message ? false : message.forwarded;
+    return !message ? false : !message.forwarded;
   }
 
   async getUserMessageA(adminMessageId) {
@@ -130,7 +133,7 @@ class Messages {
       if (message.forwarded)
         return message;
       else {
-        console.error("Couldn't find user message.");
+        console.error(`Couldn't find message with admin message id ${adminMessageId} in database. Likely it is not a message related to the bot.`);
         return null;
       }
 
@@ -141,12 +144,12 @@ class Messages {
     })
 
     if (!message) {
-      console.error("Couldn't find message.");
+      console.error(`Couldn't find message with admin message id ${adminMessageId} in database. Likely it is not a message related to the bot.`);
       return null;
     }
 
     if (!message.forwarded) {
-      console.error("Couldn't find user message.");
+      console.error(`Couldn't find message with admin message id ${adminMessageId} in database. Likely it is not a message related to the bot.`);
       return null;
     }
 
@@ -167,7 +170,7 @@ class Messages {
       if (message.forwarded)
         return message;
       else {
-        console.error("Couldn't find user message.");
+        console.error(`Couldn't find message with user message id ${userMessageId} in database. Likely it is not a message related to the bot.`);
         return null;
       }
 
@@ -178,12 +181,12 @@ class Messages {
     })
 
     if (!message) {
-      console.error("Couldn't find message.");
+      console.error(`Couldn't find message with user message id ${userMessageId} in database. Likely it is not a message related to the bot.`);
       return null;
     }
 
     if (!message.forwarded) {
-      console.error("Couldn't find user message.");
+      console.error(`Couldn't find message with user message id ${userMessageId} in database. Likely it is not a message related to the bot.`);
       return null;
     }
 
@@ -210,7 +213,7 @@ class Messages {
       if (!message.forwarded)
         return message;
       else {
-        console.error("Couldn't find admin message.");
+        console.error(`Couldn't find message with admin message id ${adminMessageId} in database. Likely it is not a message related to the bot.`);
         return null;
       }
 
@@ -221,12 +224,12 @@ class Messages {
     })
 
     if (!message) {
-      console.error("Couldn't find message.");
+      console.error(`Couldn't find message with admin message id ${adminMessageId} in database. Likely it is not a message related to the bot.`);
       return null;
     }
 
     if (message.forwarded) {
-      console.error("Couldn't find admin message.");
+      console.error(`Couldn't find message with admin message id ${adminMessageId} in database. Likely it is not a message related to the bot.`);
       return null;
     }
 
@@ -257,12 +260,12 @@ class Messages {
     })
 
     if (!message) {
-      console.error("Couldn't find message.");
+      console.error(`Couldn't find message with user message id ${userMessageId} in database. Likely it is not a message related to the bot.`);
       return null;
     }
 
     if (message.forwarded) {
-      console.error("Couldn't find admin message.");
+      console.error(`Couldn't find message with user message id ${userMessageId} in database. Likely it is not a message related to the bot.`);
       return null;
     }
 

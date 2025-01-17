@@ -1,4 +1,4 @@
-import { BotInfo, bot } from './constants.js';
+import { BotInfo, bot, prisma } from './constants.js';
 import { UserInfo, messages } from './common.js';
 import { settings, users, admins } from './settings.js';
 import { sendDiagnosticMessage, DiagnosticMessage } from './diagnostics.js';
@@ -302,7 +302,9 @@ export default class CommandHandler {
 
     if (text == "delete" || text == "عومر") {
 
-      const message = await messages.getMessage(replyToMessage);
+      console.log(replyToMessage);
+
+      const message = await CommandHandler.#mapForwardedMessageToUserChatID(replyToMessage);
 
       if (!message) {
         sendDiagnosticMessage(DiagnosticMessage.MESSAGE_NOT_PRESENT_BOT_DATA_STRUCTURES, BotInfo.ADMIN_CHAT_ID, { reply_to_message_id: replyToMessageId })
@@ -418,7 +420,7 @@ export default class CommandHandler {
       if (await users.getUser(msg.from.id)) // If the user has already /start ed the chat
         sendDiagnosticMessage(DiagnosticMessage.USER_CHAT_HAS_ALREADY_STARTED, userChatId, options);
       else {
-        await users.addUser(msg.from);
+        await users.addUser(msg.from, { banned: false, privateMode: false });
         sendDiagnosticMessage(DiagnosticMessage.USER_WELCOMING_MESSAGE, userChatId, options);
       }
 

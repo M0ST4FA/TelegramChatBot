@@ -2,6 +2,7 @@ import { BotInfo, bot } from './constants.js';
 import { UserInfo, messages } from './common.js';
 import { settings, users } from './settings.js';
 import CommandHandler from './CommandHandler.js';
+import { sendDiagnosticMessage, DiagnosticMessage } from './diagnostics.js';
 
 export default class MessageHandler {
 
@@ -179,7 +180,7 @@ export default class MessageHandler {
     }
 
     // SEND THE MESSAGE
-    return MessageHandler.#sendMessage(userChatId, msg, options);
+    return await MessageHandler.#sendMessage(userChatId, msg, options);
   }
 
   static async #forwardUserMessageToAdminChat(msg) {
@@ -189,7 +190,7 @@ export default class MessageHandler {
     const replyToMessage = msg.reply_to_message;
 
     // Forward the user's message to the admin
-    bot.forwardMessage(BotInfo.ADMIN_CHAT_ID, userChatId, messageIdInUserChat).then(async adminMsg => {
+    await bot.forwardMessage(BotInfo.ADMIN_CHAT_ID, userChatId, messageIdInUserChat).then(async adminMsg => {
       // Store the original user message ID and chat ID
       await messages.addUserMessage(userChatId, messageIdInUserChat, adminMsg.message_id)
 
@@ -228,7 +229,7 @@ export default class MessageHandler {
     }
 
     // SEND THE MESSAGE
-    return MessageHandler.#sendMessage(BotInfo.ADMIN_CHAT_ID, msg, options);
+    return await MessageHandler.#sendMessage(BotInfo.ADMIN_CHAT_ID, msg, options);
   }
 
   // Main methods
@@ -291,7 +292,7 @@ export default class MessageHandler {
     };
 
     bot.editMessageText(text, options);
-    sendDiagnosticMessage(DiagnosticMessage.EDITED_MESSAGE_TEXT, ADMIN_CHAT_ID, { reply_to_message_id: adminChatMsgId });
+    sendDiagnosticMessage(DiagnosticMessage.EDITED_MESSAGE_TEXT, BotInfo.ADMIN_CHAT_ID, { reply_to_message_id: adminChatMsgId });
 
   }
 
