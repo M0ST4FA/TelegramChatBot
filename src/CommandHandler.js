@@ -302,12 +302,10 @@ export default class CommandHandler {
 
     if (text == "delete" || text == "عومر") {
 
-      console.log(replyToMessage);
-
-      const message = await CommandHandler.#mapForwardedMessageToUserChatID(replyToMessage);
+      const message = await messages.getAdminMessageA(replyToMessageId);
 
       if (!message) {
-        sendDiagnosticMessage(DiagnosticMessage.MESSAGE_NOT_PRESENT_BOT_DATA_STRUCTURES, BotInfo.ADMIN_CHAT_ID, { reply_to_message_id: replyToMessageId })
+        sendDiagnosticMessage(DiagnosticMessage.MESSAGE_NOT_PRESENT_BOT_DATA_STRUCTURES, BotInfo.ADMIN_CHAT_ID, { reply_to_message_id: replyToMessageId });
         return true;
       }
 

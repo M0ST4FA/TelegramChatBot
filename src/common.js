@@ -37,8 +37,6 @@ class Messages {
       }
     })
 
-    console.log('Message returned by prisma:', m);
-
     this.#messages.set(data.userMessageId, data);
     this.#keyMappingA2U.set(data.adminMessageId, data.userMessageId);
     return data;
