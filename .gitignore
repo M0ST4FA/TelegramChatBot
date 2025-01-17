@@ -4,3 +4,5 @@ botconfig.json
 .vercel
 *.env
 migrations
+certificate
+*.ps1

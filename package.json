@@ -12,7 +12,7 @@
     "build": ""
   },
   "author": "M0sT4fa",
-  "license": "MIT",
+  "license": "AGPL-3.0-only",
   "dependencies": {
     "@prisma/client": "^6.2.1",
     "docreaderbot": "file:",

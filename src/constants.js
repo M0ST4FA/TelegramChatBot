@@ -8,8 +8,17 @@ export class BotInfo {
       static BOT_NAME = process.env.BOT_NAME;
       static BOT_TOKEN = process.env.BOT_TOKEN;
       static ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID; // Replace with the chat ID you want to forward messages to
+      static PORT = process.env.PORT;
+      static WEBHOOK_URL = process.env.WEBHOOK_URL;
 }
-export const bot = new TelegramBot(BotInfo.BOT_TOKEN, { polling: true });
+export const bot = new TelegramBot(BotInfo.BOT_TOKEN, {
+      polling: false,
+      webHook: {
+            port: 8443
+      }
+});
+
+bot.setWebHook(`${BotInfo.WEBHOOK_URL}/webhook/${BotInfo.BOT_TOKEN}`);
 
 export const prisma = new PrismaClient();
 
