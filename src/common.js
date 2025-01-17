@@ -31,10 +31,8 @@ class Messages {
       forwarded
     }
 
-    const m = await prisma.message.create({
-      data: {
-        ...data
-      }
+    await prisma.message.create({
+      data
     })
 
     this.#messages.set(data.userMessageId, data);
@@ -83,7 +81,7 @@ class Messages {
       })
 
     if (!message) {
-      console.error(`Couldn't find message with id ${sMessageId} in database. Likely it is not a message related to the bot.`);
+      console.warn(`Couldn't find message with message id ${sMessageId} (chat id: ${chatId}) in database. Likely it is not a message related to the bot.`);
       return null;
     }
 
@@ -105,14 +103,7 @@ class Messages {
   }
 
   async isMessageSentByAdmin(msg) {
-    let message;
-
-    if (msg.chat.id == BotInfo.ADMIN_CHAT_ID)
-      message = await this.getAdminMessageA(msg.message_id);
-    else
-      message = await this.getAdminMessageU(msg.message_id);
-
-    return !message ? false : !message.forwarded;
+    return !(await this.isMessageSentByUser(msg));
   }
 
   async getUserMessageA(adminMessageId) {
@@ -120,9 +111,11 @@ class Messages {
     if (!adminMessageId)
       return null;
 
+    const biAdminMessageId = adminMessageId;
+
     let message;
 
-    const userMessageId = this.#keyMappingA2U.get(adminMessageId);
+    const userMessageId = this.#keyMappingA2U.get(biAdminMessageId);
 
     if (userMessageId)
       message = this.#messages.get(userMessageId);
@@ -131,23 +124,23 @@ class Messages {
       if (message.forwarded)
         return message;
       else {
-        console.error(`Couldn't find message with admin message id ${adminMessageId} in database. Likely it is not a message related to the bot.`);
+        console.warn(`Message with admin message id ${biAdminMessageId} is in the cache but it is not sent by user. The function "getUserMessageA" expects the message to be forwarded.`);
         return null;
       }
 
     message = await prisma.message.findUnique({
       where: {
-        adminMessageId
+        adminMessageId: biAdminMessageId
       }
     })
 
     if (!message) {
-      console.error(`Couldn't find message with admin message id ${adminMessageId} in database. Likely it is not a message related to the bot.`);
+      console.warn(`Couldn't find message with admin message id ${biAdminMessageId} in database. Likely it is not a message related to the bot.`);
       return null;
     }
 
     if (!message.forwarded) {
-      console.error(`Couldn't find message with admin message id ${adminMessageId} in database. Likely it is not a message related to the bot.`);
+      console.warn(`Message with admin message id ${biAdminMessageId} is in the database but it is not sent by user. The function "getUserMessageA" expects the message to be forwarded.`);
       return null;
     }
 
@@ -162,29 +155,31 @@ class Messages {
     if (!userMessageId)
       return null;
 
-    let message = this.#messages.get(userMessageId);
+    const biUserMessageId = BigInt(userMessageId);
+
+    let message = this.#messages.get(biUserMessageId);
 
     if (message)
       if (message.forwarded)
         return message;
       else {
-        console.error(`Couldn't find message with user message id ${userMessageId} in database. Likely it is not a message related to the bot.`);
+        console.warn(`Message with user message id ${biUserMessageId} is in the cache but it is not sent by user. The function "getUserMessageU" expects the message to be forwarded.`);
         return null;
       }
 
     message = await prisma.message.findUnique({
       where: {
-        userMessageId
+        userMessageId: biUserMessageId
       }
     })
 
     if (!message) {
-      console.error(`Couldn't find message with user message id ${userMessageId} in database. Likely it is not a message related to the bot.`);
+      console.warn(`Couldn't find message with user message id ${biUserMessageId} in database. Likely it is not a message related to the bot.`);
       return null;
     }
 
     if (!message.forwarded) {
-      console.error(`Couldn't find message with user message id ${userMessageId} in database. Likely it is not a message related to the bot.`);
+      console.warn(`Message with user message id ${biUserMessageId} is in the database but it is not sent by user. The function "getUserMessageA" expects the message to be forwarded.`);
       return null;
     }
 
@@ -199,9 +194,11 @@ class Messages {
     if (!adminMessageId)
       return null;
 
+    const biAdminMessageId = BigInt(adminMessageId);
+
     let message;
 
-    const userMessageId = this.#keyMappingA2U.get(adminMessageId);
+    const userMessageId = this.#keyMappingA2U.get(biAdminMessageId);
 
     // This handles the case where the message is not in the cache
     if (userMessageId)
@@ -211,23 +208,23 @@ class Messages {
       if (!message.forwarded)
         return message;
       else {
-        console.error(`Couldn't find message with admin message id ${adminMessageId} in database. Likely it is not a message related to the bot.`);
+        console.warn(`Message with admin message id ${biAdminMessageId} is in the cache but it is not sent by admin. The function "getAdminMessageA" expects the message to not be forwarded.`);
         return null;
       }
 
     message = await prisma.message.findUnique({
       where: {
-        adminMessageId
+        adminMessageId: biAdminMessageId
       }
     })
 
     if (!message) {
-      console.error(`Couldn't find message with admin message id ${adminMessageId} in database. Likely it is not a message related to the bot.`);
+      console.warn(`Couldn't find message with admin message id ${biAdminMessageId} in database. Likely it is not a message related to the bot.`);
       return null;
     }
 
     if (message.forwarded) {
-      console.error(`Couldn't find message with admin message id ${adminMessageId} in database. Likely it is not a message related to the bot.`);
+      console.warn(`Message with admin message id ${biAdminMessageId} is in the database but it is not sent by admin. The function "getAdminMessageA" expects the message to not be forwarded.`);
       return null;
     }
 
@@ -242,28 +239,32 @@ class Messages {
     if (!userMessageId)
       return null;
 
-    let message = this.#messages.get(userMessageId);
+    const biUserMessageId = BigInt(userMessageId);
+
+    let message = this.#messages.get(biUserMessageId);
 
     if (message) {
       if (!message.forwarded)
         return message;
-      else
+      else {
+        console.warn(`Message with user message id ${biUserMessageId} is in the cache but it is not sent by admin. The function "getAdminMessageU" expects the message to not be forwarded.`)
         return null;
+      }
     }
 
     message = await prisma.message.findUnique({
       where: {
-        userMessageId
+        userMessageId: biUserMessageId
       }
     })
 
     if (!message) {
-      console.error(`Couldn't find message with user message id ${userMessageId} in database. Likely it is not a message related to the bot.`);
+      console.warn(`"getAdminMessageU" couldn't find message with user message id ${biUserMessageId} in database. Likely it is not a message related to the bot.`);
       return null;
     }
 
     if (message.forwarded) {
-      console.error(`Couldn't find message with user message id ${userMessageId} in database. Likely it is not a message related to the bot.`);
+      console.warn(`Message with user message id ${biUserMessageId} is in the database but it is not sent by admin. The function "getAdminMessageU" expects the message to not be forwarded.`);
       return null;
     }
 
@@ -273,7 +274,7 @@ class Messages {
     return message;
   }
 
-  static #instance = new Messages;
+  static #instance = new Messages();
   static async instance() {
     await Messages.#init();
     return Messages.#instance;

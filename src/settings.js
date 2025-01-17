@@ -137,7 +137,6 @@ class Settings {
     return obj.value;
   }
 
-
   static async init() {
 
     if (Settings.#instance.#initialized)
@@ -242,7 +241,7 @@ class Users {
   }
 
   static #addUserDB = async function (user, { banned = false, privateMode = false }) {
-    const sUserId = user.id;
+    const sUserId = BigInt(user.id);
 
     console.log(user);
 
@@ -258,6 +257,7 @@ class Users {
   static #getUserDB = async function (userId) {
 
     const sUserId = BigInt(userId)
+
     const user = await prisma.user.findUnique({
       where: {
         userId: sUserId
@@ -272,12 +272,14 @@ class Users {
   }
 
   async getUser(userId) {
-    let user = this.#users.get(userId);
+    const biUserId = BigInt(userId);
+
+    let user = this.#users.get(biUserId);
 
     if (user)
       return user;
 
-    user = await Users.#getUserDB(userId);
+    user = await Users.#getUserDB(biUserId);
 
     if (user)
       this.#users.set(user.userId, user);
@@ -287,7 +289,7 @@ class Users {
 
   async setUser(user, { banned, privateMode }) {
 
-    const userId = user.id;
+    const userId = BigInt(user.id);
 
     // If both are not specified
     if (banned == undefined && privateMode == undefined)
@@ -341,6 +343,7 @@ class Users {
   // BANNING
   async isUserBanned(user) {
     const userId = BigInt(user.id);
+
     return this.#bannedUserIds.has(userId);
   }
 
@@ -388,12 +391,14 @@ class Users {
 
   // PRIVATE
   async isUserPrivate(user) {
-    const userObj = await this.getUser(user.id);
+    const userId = BigInt(user.id);
+
+    const userObj = await this.getUser(userId);
     return !userObj ? false : userObj.private;
   }
 
   async makeUserPrivate(user) {
-    const userId = user.id;
+    const userId = BigInt(user.id);
 
     let userObj = await this.getUser(userId);
 
@@ -410,7 +415,7 @@ class Users {
   }
 
   async makeUserNonPrivate(user) {
-    const userId = user.id;
+    const userId = BigInt(user.id);
 
     let userObj = await this.getUser(userId);
 
@@ -444,7 +449,7 @@ class Admins {
   }
 
   static #addAdminDB = async function (admin) {
-    const sUserId = admin.id;
+    const sUserId = BigInt(admin.id);
 
     console.log(admin);
 
@@ -458,6 +463,7 @@ class Admins {
 
   static #getAdminDB = async function (userId) {
     const sUserId = BigInt(userId)
+
     const user = await prisma.admin.findUnique({
       where: {
         userId: sUserId
@@ -468,12 +474,14 @@ class Admins {
   }
 
   async getAdmin(userId) {
-    const user = this.#admins.get(userId);
+    const biUserId = BigInt(userId);
+
+    const user = this.#admins.get(biUserId);
 
     if (user)
       return user;
 
-    const userObj = await Admins.#getAdminDB(userId);
+    const userObj = await Admins.#getAdminDB(biUserId);
 
     if (userObj)
       this.#admins.set(userObj.userId, userObj);
@@ -483,7 +491,7 @@ class Admins {
 
   async setAdmin(user, { signs }) {
 
-    const userId = user.id;
+    const userId = BigInt(user.id);
 
     // If signing is not specified
     if (signs == undefined)
@@ -527,12 +535,14 @@ class Admins {
 
   // SIGNING
   async adminSigns(user) {
-    const userObj = await this.getAdmin(user.id);
+    const userId = BigInt(user.id);
+
+    const userObj = await this.getAdmin(userId);
     return !userObj ? true : userObj.signs;
   }
 
   async enableSigning(user) {
-    const userId = user.id;
+    const userId = BigInt(user.id);
 
     let userObj = await this.getAdmin(userId);
 
@@ -549,7 +559,7 @@ class Admins {
   }
 
   async disableSigning(user) {
-    const userId = user.id;
+    const userId = BigInt(user.id);
 
     let userObj = await this.getAdmin(userId);
 

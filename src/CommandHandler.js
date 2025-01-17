@@ -335,7 +335,7 @@ export default class CommandHandler {
 
       const message = await CommandHandler.#mapForwardedMessageToUserChatID(replyToMessage);
 
-      if (Object.entries(message).length == 0)
+      if (!message)
         return;
 
       const userChatId = message.userChatId;
@@ -343,11 +343,12 @@ export default class CommandHandler {
       let username;
       let fullName;
 
+      const id = userChatId;
       const member = await bot.getChatMember(userChatId, userChatId);
       const user = member.user;
-      const isInPrivateMode = await users.isUserPrivate(user);
-      const id = user.id;
-      const isUserBanned = await users.isUserBanned({ id: chatId });
+      const userObj = await users.getUser(userChatId);
+      const isInPrivateMode = userObj.private;
+      const isUserBanned = userObj.banned;
 
       if (isInPrivateMode) {
         const userInfo = `

@@ -11,6 +11,7 @@ export class BotInfo {
       static PORT = process.env.PORT;
       static WEBHOOK_URL = process.env.WEBHOOK_URL;
 }
+
 export const bot = new TelegramBot(BotInfo.BOT_TOKEN, {
       polling: false,
       webHook: {
@@ -18,13 +19,13 @@ export const bot = new TelegramBot(BotInfo.BOT_TOKEN, {
       }
 });
 
-bot.setWebHook(`${BotInfo.WEBHOOK_URL}/webhook/${BotInfo.BOT_TOKEN}`);
+await bot.setWebHook(`${BotInfo.WEBHOOK_URL}/webhook/${BotInfo.BOT_TOKEN}`);
+const webhookInfo = await bot.getWebHookInfo();
+console.log(`Webhook info:\nURL: ${webhookInfo.url}\nAllows updates: ${webhookInfo.allowed_updates}\nPending update count: ${webhookInfo.pending_update_count}`);
 
 export const prisma = new PrismaClient();
 
 export class TextMessages {
-
-      static #BOT_SENDER_MESSAGE = BotInfo.BOT_NAME;
 
       // ADMIN COMMANDS
       static ADMIN_COMMANDS_MESSAGE_EN =
