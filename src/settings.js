@@ -254,6 +254,16 @@ class Users {
     });
   }
 
+  static #deleteUserDB = async function (user) {
+    const sUserId = BigInt(user.id);
+
+    return await prisma.user.delete({
+      where: {
+        userId: sUserId
+      }
+    });
+  }
+
   static #getUserDB = async function (userId) {
 
     const sUserId = BigInt(userId)
@@ -319,7 +329,7 @@ class Users {
     if (!(bannedChanged || privateChanged))
       return userObj;
 
-    await prisma.user.update({
+    prisma.user.update({
       where: {
         userId
       },
@@ -327,6 +337,8 @@ class Users {
         banned,
         private: privateMode
       }
+    }).then(u => {
+      console.log('Updated user in database.', user);
     })
 
     return userObj;
@@ -334,8 +346,17 @@ class Users {
 
   // Adds the user immediately and then sends a request to the database
   async addUser(user, { banned = false, privateMode = false }) {
-    const userObj = await Users.#addUserDB(user, { banned, private: privateMode });
+    const userObj = {
+      userId: user.id,
+      banned: banned ? banned : false,
+      private: privateMode ? privateMode : false
+    }
     this.#users.set(userObj.userId, userObj);
+
+    Users.#addUserDB(user, { banned, private: privateMode }).then(u => {
+      userObj.id = u.id;
+      console.log('Added a new user to database.', user);
+    });
 
     return userObj;
   }

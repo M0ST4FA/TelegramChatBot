@@ -1,11 +1,11 @@
-import { prisma, BotInfo } from './constants.js';
+import { prisma, BotInfo, bot } from './constants.js';
 import { users, admins } from './settings.js'
 import QuickLRU from 'quick-lru';
 
 class Messages {
 
   static #onEvection(key, value) {
-    this.#instance.#keyMappingA2U.delete(value.adminMessageId);
+    Messages.#instance.#keyMappingA2U.delete(value.adminMessageId);
   }
 
   #messages = new QuickLRU({ maxSize: 3000, onEviction: Messages.#onEvection });
@@ -38,6 +38,32 @@ class Messages {
     this.#messages.set(data.userMessageId, data);
     this.#keyMappingA2U.set(data.adminMessageId, data.userMessageId);
     return data;
+  }
+
+  async deleteMessage(message) {
+
+    const userMessageId = message.userMessageId;
+    this.#messages.delete(userMessageId);
+
+    async function deleteMsgFromPrisma(userMessageId) {
+      return await prisma.message.delete({
+        where: {
+          userMessageId
+        }
+      })
+    }
+
+    async function deleteMsgFromBot(message) {
+      if (message.forwarded)
+        return await bot.deleteMessage(BotInfo.ADMIN_CHAT_ID, message.adminMessageId)
+      else
+        return await bot.deleteMessage(message.userChatId, message.userMessageId);
+    }
+
+    return await Promise.allSettled([
+      deleteMsgFromBot(message),
+      deleteMsgFromPrisma(userMessageId)
+    ]);
   }
 
   async addUserMessage(userChatId, userMsgId, adminMsgId) {
@@ -111,7 +137,7 @@ class Messages {
     if (!adminMessageId)
       return null;
 
-    const biAdminMessageId = adminMessageId;
+    const biAdminMessageId = BigInt(adminMessageId);
 
     let message;
 
@@ -275,6 +301,7 @@ class Messages {
   }
 
   static #instance = new Messages();
+
   static async instance() {
     await Messages.#init();
     return Messages.#instance;

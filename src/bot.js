@@ -57,7 +57,7 @@ bot.on('edited_message_text', async (msg) => {
       return;
 
     // If this is not a message we've sent to some user
-    if (!(await messages.isMessageSentByAdmin(msg)))
+    if (await messages.isMessageSentByUser(msg))
       return;
 
     if (msg.text)

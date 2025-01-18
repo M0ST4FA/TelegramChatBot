@@ -11,20 +11,26 @@ const banChat = async function (chatId, banMsgId) {
   }
 
   // If user is already banned
-  if (await users.isUserBanned({ id: chatId }))
-    return sendDiagnosticMessage(DiagnosticMessage.USER_IS_ALREADY_BANNED, BotInfo.ADMIN_CHAT_ID, options);
+  if (await users.isUserBanned({ id: chatId })) {
+    sendDiagnosticMessage(DiagnosticMessage.USER_IS_ALREADY_BANNED, BotInfo.ADMIN_CHAT_ID, options);
+    return true;
+  }
 
-  // Add the user to the list of banned users
-  await users.banUser({ id: chatId });
-
-  // Send diagnostic message to the user
-  sendDiagnosticMessage(DiagnosticMessage.USER_BANNING_MESSAGE, chatId);
+  const resArray = await Promise.allSettled([
+    // Add the user to the list of banned users
+    users.banUser({ id: chatId }),
+    // Send diagnostic message to the user
+    sendDiagnosticMessage(DiagnosticMessage.USER_BANNING_MESSAGE, chatId),
+    // Get user from chat
+    bot.getChatMember(chatId, chatId)
+  ])
 
   // Send diagnostic message to admin chat
-  const chatMember = await bot.getChatMember(chatId, chatId);
+  const chatMember = resArray[2].value;
   const user = chatMember.user;
   options.user = user;
   sendDiagnosticMessage(DiagnosticMessage.ADMIN_BANNING_MESSAGE, BotInfo.ADMIN_CHAT_ID, options);
+  return true;
 }
 
 const unbanChat = async function (chatId, unbanMsgId) {
@@ -35,21 +41,27 @@ const unbanChat = async function (chatId, unbanMsgId) {
   }
 
   // If user is already not banned
-  if (!(await users.isUserBanned({ id: chatId })))
-    return sendDiagnosticMessage(DiagnosticMessage.USER_IS_ALREADY_NOT_BANNED, BotInfo.ADMIN_CHAT_ID, options);
+  if (!(await users.isUserBanned({ id: chatId }))) {
+    sendDiagnosticMessage(DiagnosticMessage.USER_IS_ALREADY_NOT_BANNED, BotInfo.ADMIN_CHAT_ID, options);
+    return true;
+  }
 
-  // Remove the user from the list of banned users
-  await users.unbanUser({ id: chatId });
-
-  // Inform the user that they have been removed from the list of banned users
-  sendDiagnosticMessage(DiagnosticMessage.USER_NO_LONGER_BANNED_MESSAGE, chatId);
+  const resArray = await Promise.allSettled([
+    // Remove the user from the list of banned users
+    users.unbanUser({ id: chatId }),
+    // Inform the user that they have been removed from the list of banned users
+    sendDiagnosticMessage(DiagnosticMessage.USER_NO_LONGER_BANNED_MESSAGE, chatId),
+    bot.getChatMember(chatId, chatId)
+  ]
+  )
 
   // Inform the admin chat that the user has been removed from the list of banned users
-  const chatMember = await bot.getChatMember(chatId, chatId);
+  const chatMember = resArray[2].value;
   const user = chatMember.user;
   options.user = user;
   sendDiagnosticMessage(DiagnosticMessage.ADMIN_USER_NO_LONGER_BANNED_MESSAGE, BotInfo.ADMIN_CHAT_ID, options);
 
+  return true;
 }
 
 const initializeBot = async function () {
@@ -302,18 +314,22 @@ export default class CommandHandler {
 
     if (text == "delete" || text == "عومر") {
 
-      const message = await messages.getAdminMessageA(replyToMessageId);
+      const message = await messages.getMessage(replyToMessage);
 
       if (!message) {
         sendDiagnosticMessage(DiagnosticMessage.MESSAGE_NOT_PRESENT_BOT_DATA_STRUCTURES, BotInfo.ADMIN_CHAT_ID, { reply_to_message_id: replyToMessageId });
         return true;
       }
 
-      const { userChatId, userMessageId } = message;
+      if (message.forwarded) {
+        bot.sendMessage(BotInfo.ADMIN_CHAT_ID, 'Trying to delete a user message. You can only delete admin messages.', { reply_to_message_id: replyToMessageId });
+        return true;
+      }
 
-      bot.deleteMessage(userChatId, userMessageId);
-      sendDiagnosticMessage(DiagnosticMessage.DELETED_MESSAGE, BotInfo.ADMIN_CHAT_ID, { reply_to_message_id: replyToMessageId })
-
+      await Promise.allSettled([
+        messages.deleteMessage(message),
+        sendDiagnosticMessage(DiagnosticMessage.DELETED_MESSAGE, BotInfo.ADMIN_CHAT_ID, { reply_to_message_id: replyToMessageId })
+      ]);
     }
     else if (text == "ban" || text == "عومر2") {
 
@@ -343,8 +359,13 @@ export default class CommandHandler {
       let username;
       let fullName;
 
+      const resArray = await Promise.allSettled([
+        bot.getChatMember(userChatId, userChatId),
+        bot.getUserProfilePhotos(userChatId)
+      ]);
+
       const id = userChatId;
-      const member = await bot.getChatMember(userChatId, userChatId);
+      const member = resArray[0].value;
       const user = member.user;
       const userObj = await users.getUser(userChatId);
       const isInPrivateMode = userObj.private;
@@ -364,7 +385,7 @@ export default class CommandHandler {
       username = UserInfo.getUserNameFromUser(user);
       fullName = UserInfo.getFullNameFromUser(user);
 
-      const photos = await bot.getUserProfilePhotos(userChatId);
+      const photos = resArray[1].value;
 
       const userInfo = `
           ✳️ User Information:
@@ -419,8 +440,10 @@ export default class CommandHandler {
       if (await users.getUser(msg.from.id)) // If the user has already /start ed the chat
         sendDiagnosticMessage(DiagnosticMessage.USER_CHAT_HAS_ALREADY_STARTED, userChatId, options);
       else {
-        await users.addUser(msg.from, { banned: false, privateMode: false });
-        sendDiagnosticMessage(DiagnosticMessage.USER_WELCOMING_MESSAGE, userChatId, options);
+        await Promise.allSettled([
+          users.addUser(msg.from, { banned: false, privateMode: false }),
+          sendDiagnosticMessage(DiagnosticMessage.USER_WELCOMING_MESSAGE, userChatId, options)
+        ])
       }
 
       return true;
@@ -442,13 +465,17 @@ export default class CommandHandler {
 
       const res = regexMatch.at(1);
 
-      if (res == 'off') {
-        await users.makeUserNonPrivate(msg.from);
-        sendDiagnosticMessage(DiagnosticMessage.USER_PRIVATE_MODE_CHANGED_MESSAGE, userChatId, options);
-      } else {
-        await users.makeUserPrivate(msg.from);
-        sendDiagnosticMessage(DiagnosticMessage.USER_PRIVATE_MODE_CHANGED_MESSAGE, userChatId, options);
-      }
+      if (res == 'off')
+        await Promise.allSettled([
+          users.makeUserNonPrivate(msg.from),
+          sendDiagnosticMessage(DiagnosticMessage.USER_PRIVATE_MODE_CHANGED_MESSAGE, userChatId, options)
+        ]
+        )
+      else
+        await Promise.allSettled([
+          await users.makeUserPrivate(msg.from),
+          sendDiagnosticMessage(DiagnosticMessage.USER_PRIVATE_MODE_CHANGED_MESSAGE, userChatId, options)
+        ])
 
     }
     else

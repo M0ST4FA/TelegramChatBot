@@ -179,35 +179,51 @@ export const sendDiagnosticMessage = async function (messageType, chatId, opts =
 
       break;
     case DiagnosticMessage.ADMIN_BANNING_MESSAGE:
-      if (settings.language() == "ar")
+      if (settings.language() == "ar") {
+        const msg1 = `لقد تم حظر المستخدم الذي يحمل المعرف (${userId}) من البوت.\n${botSenderMsg}`;
+        const msg2 = `لقد تم حظر المستخدم ${userFullName} (${username}:${userId}) من البوت.\n${botSenderMsg}`;
         if (await users.isUserPrivate(user))
-          bot.sendMessage(chatId, `لقد تم حظر المستخدم الذي يحمل المعرف (${userId}) من البوت.\n${botSenderMsg}`, options);
+          bot.sendMessage(chatId, msg1, { ...options, ...(getEntities(msg1)) });
         else
-          bot.sendMessage(chatId, `لقد تم حظر المستخدم ${userFullName} (${username}:${userId}) من البوت.\n${botSenderMsg}`, options);
-      else
+          bot.sendMessage(chatId, msg2, { ...options, ...(getEntities(msg2)) });
+      }
+      else {
+        const msg1 = `The user with ID ${userId} has been banned from the bot.\n${botSenderMsg}`;
+        const msg2 = `The user ${userFullName} (${username}:${userId}) has been banned from the bot.\n${botSenderMsg}`;
         if (await users.isUserPrivate(user))
-          bot.sendMessage(chatId, `The user with ID ${userId} has been banned from the bot.\n${botSenderMsg}`, options);
+          bot.sendMessage(chatId, msg1, { ...options, ...(getEntities(msg1)) });
         else
-          bot.sendMessage(chatId, `The user ${userFullName} (${username}:${userId}) has been banned from the bot.\n${botSenderMsg}`, options);
+          bot.sendMessage(chatId, msg2, { ...options, ...(getEntities(msg2)) });
+      }
       break;
     case DiagnosticMessage.USER_NO_LONGER_BANNED_MESSAGE:
       if (settings.language() == "ar")
         // bot.sendMessage(chatId, `أنت لم تعد محظورا من البوت.\n${botSenderMsg}`, options);
         break;
-      else
-        bot.sendMessage(chatId, `You're no longer banned from the bot.\n${botSenderMsg}`, options);
+      else {
+        const msg = `You're no longer banned from the bot.\n${botSenderMsg}`;
+        bot.sendMessage(chatId, msg, { ...options, ...(getEntities(msg)) });
+      }
       break;
     case DiagnosticMessage.ADMIN_USER_NO_LONGER_BANNED_MESSAGE:
-      if (settings.language() == "ar")
+      if (settings.language() == "ar") {
+        const msg1 = `لقد تمت إزالة المستخدم الذي يحمل المعرف (${userId}) قائمة الحظر.\n${botSenderMsg}`;
+        const msg2 = `لقد تمت إزالة المستخدم ${userFullName} (${username}:${userId}) من قائمة الحظر.\n${botSenderMsg}`;
+
         if (await users.isUserPrivate(user))
-          bot.sendMessage(chatId, `لقد تمت إزالة المستخدم الذي يحمل المعرف (${userId}) قائمة الحظر.\n${botSenderMsg}`, options);
+          bot.sendMessage(chatId, msg1, { ...options, ...(getEntities(msg1)) });
         else
-          bot.sendMessage(chatId, `لقد تمت إزالة المستخدم ${userFullName} (${username}:${userId}) من قائمة الحظر.\n${botSenderMsg}`, options);
-      else
+          bot.sendMessage(chatId, msg2, { ...options, ...(getEntities(msg2)) });
+      }
+      else {
+        const msg1 = `The user with ID ${userId} has been removed from the banned list.\n${botSenderMsg}`;
+        const msg2 = `The user ${userFullName} (${username}:${userId}) has been removed from the banned list.\n${botSenderMsg}`;
+
         if (await users.isUserPrivate(user))
-          bot.sendMessage(chatId, `The user with ID ${userId} has been removed from the banned list.\n${botSenderMsg}`, options);
+          bot.sendMessage(chatId, msg1, { ...options, ...(getEntities(msg1)) });
         else
-          bot.sendMessage(chatId, `The user ${userFullName} (${username}:${userId}) has been removed from the banned list.\n${botSenderMsg}`, options);
+          bot.sendMessage(chatId, msg2, { ...options, ...(getEntities(msg2)) });
+      }
       break;
     case DiagnosticMessage.USER_IS_ALREADY_BANNED:
       if (settings.language() == "ar") {

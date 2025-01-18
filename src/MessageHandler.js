@@ -142,12 +142,17 @@ export default class MessageHandler {
 
   static async #sendAdminMessageToUserChat(msg) {
 
-    // GET INFORMATION ABOUT THE MESSAGE THE ADMIN IS REPLYING TO
     const replyToMessage = msg.reply_to_message;
+    const resArray = await Promise.allSettled([
+      messages.getMessage(replyToMessage),
+      MessageHandler.#getText(msg),
+    ]);
+
+    // GET INFORMATION ABOUT THE MESSAGE THE ADMIN IS REPLYING TO
     let messageSentByUser = false;
 
     // Get message info
-    const messageBeingSent = await messages.getMessage(replyToMessage);
+    const messageBeingSent = resArray[0].value;
     if (messageBeingSent)
       messageSentByUser = messageBeingSent.forwarded;
 
@@ -164,7 +169,7 @@ export default class MessageHandler {
       return false; // Do not send anything
 
     // PREPARE THE TEXT
-    const { textOption, textQuoteOption, captionOption, quote } = await MessageHandler.#getText(msg);
+    const { textOption, textQuoteOption, captionOption, quote } = resArray[1].value;
 
     // PREPARE THE OPTIONS
     const replyToMessageIdOption = {
@@ -211,13 +216,21 @@ export default class MessageHandler {
 
   static async #sendUserMessageToAdminChat(msg) {
 
+    const replyToMessage = msg.reply_to_message;
+    const replyToMessageId = replyToMessage?.message_id;
+
+    const resArray = await Promise.allSettled([
+      MessageHandler.#getText(msg),
+      replyToMessageId ? messages.getMessage(replyToMessage) : Promise.resolve(null)
+    ])
+
+
     // PREPARE THE TEXT
-    const { textOption, textQuoteOption, captionOption, quote } = await MessageHandler.#getText(msg);
+    const { textOption, textQuoteOption, captionOption, quote } = resArray[0].value;
 
     // PREPARE THE OPTIONS
-    const replyToMessage = msg.reply_to_message;
     const replyToMessageIdOption = {
-      reply_to_message_id: replyToMessage ? (await messages.getMessage(replyToMessage)).adminMessageId : undefined
+      reply_to_message_id: replyToMessage ? resArray[1]?.value?.adminMessageId : undefined
     }
 
     const options = {
@@ -270,18 +283,22 @@ export default class MessageHandler {
 
     // Get basic message info
     const adminChatMsgId = msg.message_id;
+    const resArray = await Promise.allSettled([
+      UserInfo.getResponderMessage(msg, false),
+      messages.getAdminMessageA(adminChatMsgId)
+    ]);
 
     // Create final message text
     let text = msg.text || '';
 
-    const responderInfo = await UserInfo.getResponderMessage(msg, false); // The function takes into account the state of the user
+    const responderInfo = resArray[0].value; // The function takes into account the state of the user
     const responderMsg = responderInfo.responderMsg;
 
     text += `\n${responderMsg}`;
     text = text.trim();
 
     // The message ID in the user's chat
-    const { userMessageId: userChatMsgId, userChatId } = await messages.getMessage(msg);
+    const { userMessageId: userChatMsgId, userChatId } = resArray[1].value;
 
     const options = {
       chat_id: userChatId,
@@ -301,18 +318,22 @@ export default class MessageHandler {
     // Get basic message info
     const userMsgId = msg.message_id;
     const userChatId = msg.chat.id;
+    const resArray = await Promise.allSettled([
+      UserInfo.getSenderMessage(msg, false),
+      messages.getUserMessageU(userMsgId)
+    ]);
 
     // Create final message text
     let text = msg.text || '';
 
-    const senderInfo = await UserInfo.getSenderMessage(msg, false); // The function takes into account the state of the user
+    const senderInfo = resArray[0].value; // The function takes into account the state of the user
     const senderMsg = senderInfo.senderMsg;
 
     text += `\n${senderMsg}`;
     text = text.trim();
 
     // The message ID in the admin chat
-    const message = await messages.getUserMessageU(userMsgId);
+    const message = resArray[1].value;
     const adminMsgId = message.adminMessageId;
 
     const options = {
@@ -332,18 +353,22 @@ export default class MessageHandler {
 
     // Get basic message info
     const adminChatMsgId = msg.message_id;
+    const resArray = await Promise.allSettled([
+      UserInfo.getResponderMessage(msg, false),
+      messages.getAdminMessageA(adminChatMsgId)
+    ]);
 
     // Create final message text
     let text = msg.caption || '';
 
-    const responderInfo = await UserInfo.getResponderMessage(msg, false); // The function takes into account the state of the user
+    const responderInfo = resArray[0].value; // The function takes into account the state of the user
     const responderMsg = responderInfo.responderMsg;
 
     text += `\n${responderMsg}`;
     text = text.trim();
 
     // The message ID in the user's chat
-    const { userMessageId: userChatMsgId, userChatId } = await messages.getMessage(msg);
+    const { userMessageId: userChatMsgId, userChatId } = resArray[1].value;
 
     const options = {
       chat_id: userChatId,
@@ -363,18 +388,22 @@ export default class MessageHandler {
     // Get basic message info
     const userChatMsgId = msg.message_id;
     const userChatId = msg.chat.id;
+    const resArray = await Promise.allSettled([
+      UserInfo.getResponderMessage(msg, false),
+      messages.getUserMessageU(userChatMsgId)
+    ]);
 
     // Create final message text
     let text = msg.caption || '';
 
-    const senderInfo = await UserInfo.getSenderMessage(msg, false);  // The function takes into account the state of the user
+    const senderInfo = resArray[0].value;  // The function takes into account the state of the user
     const senderMsg = senderInfo.senderMsg;
 
     text += `\n${senderMsg}`;
     text = text.trim();
 
     // The message ID in the admin chat
-    const message = await messages.getUserMessageU(userChatMsgId);
+    const message = resArray[1].value;
     const adminMsgId = message.adminMessageId;
 
     const options = {
