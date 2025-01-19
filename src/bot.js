@@ -1,9 +1,9 @@
 import { BotInfo, bot } from './constants.js';
 import { messages } from './common.js';
-import { users } from './settings.js';
-
+import { admins, settings, users } from './settings.js';
 import CommandHandler from './CommandHandler.js';
 import MessageHandler from './MessageHandler.js';
+import { DiagnosticMessage, Diagnostics } from './diagnostics.js';
 
 // Handle incoming messages from users
 bot.on('message', async (msg) => {
@@ -45,6 +45,119 @@ bot.on('message', async (msg) => {
 
 });
 
+bot.on('callback_query', async (callbackQuery) => {
+  const queryType = callbackQuery.data;
+  const user = callbackQuery.from;
+  const editMessageReplyMarkupOptions = {
+    chat_id: callbackQuery.message.chat.id,
+    inline_message_id: callbackQuery.inline_message_id,
+    message_id: callbackQuery.message.message_id
+  }
+  let doNotGoToMain = false;
+
+  try {
+
+    if (queryType.startsWith('unban')) {
+
+      const regex = /\d+/.exec(queryType);
+
+      await users.unbanUser({ id: regex[0] });
+
+      await bot.editMessageReplyMarkup({ inline_keyboard: await CommandHandler.getBannedUsersKeyboard() }, editMessageReplyMarkupOptions);
+
+      doNotGoToMain = true;
+    }
+    else
+      switch (queryType) {
+
+        case 'toggle_sign_messages': {
+          const adminSigns = await admins.adminSigns(user);
+          if (adminSigns)
+            await admins.disableSigning(user)
+          else
+            await admins.enableSigning(user);
+
+          break;
+        }
+
+        case 'toggle_forwarding': {
+          const forwarding = settings.forwardMode();
+          await settings.setForwardMode(!forwarding);
+
+          break;
+        }
+
+        case 'toggle_replies': {
+          const replies = settings.replies();
+          await settings.setReplies(!replies);
+
+          break;
+        }
+
+        case 'change_language': {
+          await Promise.all([
+            bot.editMessageText(Diagnostics.languageSettingsMessage(), editMessageReplyMarkupOptions),
+          ])
+
+          await bot.editMessageReplyMarkup({ inline_keyboard: CommandHandler.getLanguageMenuKeyboard() }, editMessageReplyMarkupOptions)
+          doNotGoToMain = true;
+          break;
+        }
+
+        case 'set_language_arabic': {
+          await Promise.all([
+            settings.setLanguage('ar'),
+          ])
+          break;
+        }
+
+        case 'set_language_english': {
+          await Promise.all([
+            settings.setLanguage('en'),
+          ])
+
+          break;
+        }
+
+        case 'manage_banned_users': {
+          await Promise.all([
+            bot.editMessageText(Diagnostics.manageBannedUsersMessage(), editMessageReplyMarkupOptions),
+          ])
+
+          await bot.editMessageReplyMarkup({ inline_keyboard: await CommandHandler.getBannedUsersKeyboard() }, editMessageReplyMarkupOptions)
+
+          doNotGoToMain = true;
+          break;
+        }
+
+        case 'move_to_main_menu': {
+          break; // The default behavior is displaying the main menu
+        }
+
+        case 'finish_editing_settings': {
+          bot.deleteMessage(callbackQuery.message.chat.id, callbackQuery.message.message_id);
+          doNotGoToMain = true;
+          break;
+        }
+
+      }
+
+    await Promise.all([
+      doNotGoToMain ? null : bot.editMessageReplyMarkup({ inline_keyboard: await CommandHandler.getSettingsKeyboard(user) }, editMessageReplyMarkupOptions),
+      doNotGoToMain ? null : bot.editMessageText(Diagnostics.settingsMessage(), editMessageReplyMarkupOptions),
+    ]);
+
+    setTimeout(bot.answerCallbackQuery.bind(bot, callbackQuery.id), 500);
+  } catch (error) {
+    console.log(error.message);
+  }
+
+})
+
+bot.on('webhook_error', async (error) => {
+  console.log(error.cause);
+})
+
 bot.on('edited_message_text', async (msg) => {
 
   const msgChatId = msg.chat.id;
@@ -57,7 +170,12 @@ bot.on('edited_message_text', async (msg) => {
       return;
 
     // If this is not a message we've sent to some user
-    if (await messages.isMessageSentByUser(msg))
+    const message = await messages.getMessage(msg);
+
+    if (!message)
+      return;
+
+    if (message.forwarded)
       return;
 
     if (msg.text)
@@ -66,7 +184,7 @@ bot.on('edited_message_text', async (msg) => {
   } else {
 
     // If the bot doesn't know about this message
-    if (!(await messages.getMessage(msg)))
+    if (!(await messages.isMessageSentByUser(msg)))
       return;
 
     if (msg.text)

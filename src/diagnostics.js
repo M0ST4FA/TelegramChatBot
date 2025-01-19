@@ -348,14 +348,14 @@ export const sendDiagnosticMessage = async function (messageType, chatId, opts =
     case DiagnosticMessage.UNKNOWN_COMMAND:
       if (settings.language() == "ar") {
         const msg = `أمر غير معروف.\n${botSenderMsg}`;
-        bot.sendMessage(chatId, msg, {
+        await bot.sendMessage(chatId, msg, {
           ...options,
           ...(getEntities(msg))
         });
       }
       else {
         const msg = `Unknown command.\n${botSenderMsg}`;
-        bot.sendMessage(chatId, msg, {
+        await bot.sendMessage(chatId, msg, {
           ...options,
           ...(getEntities(msg))
         });
@@ -657,6 +657,30 @@ export const sendDiagnosticMessage = async function (messageType, chatId, opts =
       }
       break;
 
+  }
+
+}
+
+export class Diagnostics {
+
+  static settingsMessage() {
+    const language = settings.language();
+    const settingsMsg = language == 'ar' ? '⚙️ الإعدادات:' : '⚙️ Settings:'
+    return settingsMsg;
+  }
+
+  static languageSettingsMessage() {
+    const language = settings.language();
+    const msg = language == 'ar' ? '🌍 إعدادات اللغة:' : '🌍 Language Settings:';
+
+    return msg;
+  }
+
+  static manageBannedUsersMessage() {
+    const language = settings.language();
+    const msg = language == 'ar' ? '🔐 إدارة المستخدمين المحظورين' : '🔐 Manage Banned Users:';
+
+    return msg;
   }
 
 }

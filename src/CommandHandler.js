@@ -1,7 +1,7 @@
 import { BotInfo, bot, prisma } from './constants.js';
 import { UserInfo, messages } from './common.js';
 import { settings, users, admins } from './settings.js';
-import { sendDiagnosticMessage, DiagnosticMessage } from './diagnostics.js';
+import { sendDiagnosticMessage, DiagnosticMessage, Diagnostics } from './diagnostics.js';
 
 const banChat = async function (chatId, banMsgId) {
 
@@ -102,6 +102,118 @@ const initializeBot = async function () {
 
 export default class CommandHandler {
 
+  static getMainMenuKeyboardButton() {
+    const language = settings.language();
+
+    if (language == 'ar')
+      return [{ text: '➡️ العودة إلي القائمة الرئيسية', callback_data: 'move_to_main_menu' }];
+    else
+      return [{ text: '⬅️ Back to Main Menu', callback_data: 'move_to_main_menu' }];
+  }
+
+  static getLanguageMenuKeyboard() {
+    const language = settings.language();
+
+    const keyboard = [
+      language == 'en' ?
+        [{ text: '\uD83C\uDDF8\uD83C\uDDE6 عربي', callback_data: 'set_language_arabic' }] :
+        [{ text: '\uD83C\uDDFA\uD83C\uDDF8 English', callback_data: 'set_language_english' }],
+
+      CommandHandler.getMainMenuKeyboardButton()
+    ]
+
+    return keyboard;
+  }
+
+  static async getBannedUsersKeyboard() {
+
+    const keyboard = [];
+    const bndChatIds = await users.getBannedUserIds();
+    const promises = [];
+
+    for (const chatId of bndChatIds) {
+      const promise = bot.getChatMember(chatId, chatId)
+        .then(member => member.user);
+
+      promises.push(promise);
+    }
+
+    const bannedUsers = await Promise.all(promises);
+
+    for (const user of bannedUsers) {
+
+      const userId = user.id;
+
+      if (await users.isUserPrivate(user))
+        keyboard.push([
+          { text: `🔒 ID: ${userId} [User is in private mode]`, callback_data: `unban_user_${userId}` }
+        ])
+      else {
+
+        const username = UserInfo.getUserNameFromUser(user);
+        const fullName = UserInfo.getFullNameFromUser(user);
+        const msg = `🔒 ${fullName} (${username}:${userId})`;
+
+        keyboard.push([
+          { text: msg, callback_data: `unban_user_${userId}` }
+        ])
+
+      }
+
+    }
+
+    keyboard.push(CommandHandler.getMainMenuKeyboardButton());
+
+    return keyboard;
+  }
+
+  static async getSettingsKeyboard(user) {
+
+    const resArray = await Promise.all([
+      admins.adminSigns(user)
+    ]);
+
+    const adminSigns = resArray[0];
+    const forwarding = settings.forwardMode();
+    const replies = settings.replies();
+    const language = settings.language();
+
+    let signingButtonText = '';
+    let forwardingButtonText = '';
+    let repliesButtonText = '';
+    let languageButtonText = '';
+    let manageBannedUsersButtonText = '';
+    let finishButtonText = '';
+
+    if (language == 'ar') {
+      signingButtonText = `✒️ توقيع رسائل المشرف ${UserInfo.getUserNameFromUser(user)}: ${adminSigns ? 'موقعة' : 'غير موقعة'}`;
+      forwardingButtonText = `⏪ وضع توجيه الرسائل: ${forwarding ? 'مُشغَّل' : 'مُعطَّل'}`;
+      repliesButtonText = `🔎 إظهار الردود للمستخدم: ${replies ? 'مُشغَّل' : 'مُعطَّل'}`;
+      languageButtonText = `🌍 لغة البوت: ${language == 'ar' ? 'اللغة العربية' : 'اللغة الإنجليزية'}`;
+      manageBannedUsersButtonText = '🔐 إدارة المستخدمين المحظورين';
+      finishButtonText = '✅ إنهاء';
+    }
+    else {
+      signingButtonText = `✒️ Message Signing for Admin ${UserInfo.getUserNameFromUser(user)}: ${adminSigns ? 'On' : 'Off'}`;
+      forwardingButtonText = `⏩ Forwarding Mode: ${forwarding ? 'On' : 'Off'}`;
+      repliesButtonText = `🔍 Show Replies: ${replies ? 'On' : 'Off'}`;
+      languageButtonText = `🌎 Bot Language: ${language == 'ar' ? 'Arabic' : 'English'}`;
+      manageBannedUsersButtonText = '🔐 Manage Banned Users';
+      finishButtonText = '✅ Done';
+    }
+
+    const keyboard = [
+      [{ text: signingButtonText, callback_data: 'toggle_sign_messages' }],
+      [{ text: forwardingButtonText, callback_data: 'toggle_forwarding' }],
+      [{ text: repliesButtonText, callback_data: 'toggle_replies' }],
+      [{ text: languageButtonText, callback_data: 'change_language' }],
+      [{ text: manageBannedUsersButtonText, callback_data: 'manage_banned_users' }],
+      [{ text: finishButtonText, callback_data: 'finish_editing_settings' }],
+    ]
+
+    return keyboard;
+  };
+
   static async #mapForwardedMessageToUserChatID(adminMsg) {
 
     const userMessage = await messages.getUserMessageA(adminMsg.message_id);
@@ -127,6 +239,14 @@ export default class CommandHandler {
     if (msgText == '/log') {
       bot.sendMessage(BotInfo.ADMIN_CHAT_ID, `Reimplement this command.`);
       return true;
+    }
+    else if (msgText == '/settings') {
+      const keyboard = await CommandHandler.getSettingsKeyboard(msg.from);
+      bot.sendMessage(BotInfo.ADMIN_CHAT_ID, Diagnostics.settingsMessage(), {
+        reply_markup: {
+          inline_keyboard: keyboard
+        }
+      });
     }
     else if (msgText == '/commands')
       sendDiagnosticMessage(DiagnosticMessage.ADMIN_COMMANDS_MESSAGE, BotInfo.ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id });
@@ -217,7 +337,7 @@ export default class CommandHandler {
         sendDiagnosticMessage(DiagnosticMessage.FORWARDING_IS_ON_MESSAGE, BotInfo.ADMIN_CHAT_ID, options);
       }
 
-    } else if (msgText == '/bannedUsers') {
+    } else if (msgText == '/bannedusers') {
       const bndChatIds = await users.getBannedUserIds();
 
       if (bndChatIds.length == 0) {
@@ -439,12 +559,11 @@ export default class CommandHandler {
     else if (msgText == '/start') {
       if (await users.getUser(msg.from.id)) // If the user has already /start ed the chat
         sendDiagnosticMessage(DiagnosticMessage.USER_CHAT_HAS_ALREADY_STARTED, userChatId, options);
-      else {
+      else
         await Promise.allSettled([
           users.addUser(msg.from, { banned: false, privateMode: false }),
           sendDiagnosticMessage(DiagnosticMessage.USER_WELCOMING_MESSAGE, userChatId, options)
-        ])
-      }
+        ]);
 
       return true;
     }
