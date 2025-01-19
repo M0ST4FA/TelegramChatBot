@@ -683,4 +683,20 @@ export class Diagnostics {
     return msg;
   }
 
+  static finishMessage() {
+    const language = settings.language();
+    const msg = language == 'ar' ? '✅ إنهاء' : '✅ Done';
+
+    return msg;
+  }
+
+  static boolMessage(val) {
+    const language = settings.language();
+
+    if (val)
+      return language == 'ar' ? 'يعمل' : 'On';
+    else
+      return language == 'ar' ? 'مُعطَّل' : 'Off';
+  }
+
 }

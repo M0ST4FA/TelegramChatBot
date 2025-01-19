@@ -5,8 +5,8 @@ const TelegramBot = require('node-telegram-bot-api');
 const { PrismaClient } = require('@prisma/client');
 
 export class BotInfo {
-	static BOT_NAME = process.env.BOT_NAME;
 	static BOT_TOKEN = process.env.BOT_TOKEN;
+	static BOT_NAME = process.env.BOT_NAME;
 	static ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID; // Replace with the chat ID you want to forward messages to
 	static PORT = process.env.PORT;
 	static WEBHOOK_URL = process.env.WEBHOOK_URL;
@@ -45,8 +45,10 @@ export class TextMessages {
 	// ADMIN COMMANDS
 	static ADMIN_COMMANDS_MESSAGE_EN =
 		`✳️ Commands supported by the bot:
-	🤖 /commands
+	🤖 /help
 	Shows this message.
+	🤖 /settings
+	Shows an interactive and user friendly display for editing the admin settings of the bot.
 	🤖 /log
 	Prints debugging information for developers.
 	🤖 /init
@@ -66,14 +68,16 @@ export class TextMessages {
 	Bans the user with the ID <user ID> from the bot.
 	🤖 /unban <user ID>
 	Removes the user with the ID <user ID> from the list of banned users.
-	🤖 /language ar|en|
+	🤖 /language ar|en
 	⚙️ Prints the language of the bot.
 	📌 Sets the language of the bot to Arabic (ar) or English (en).`
 
 	static ADMIN_COMMANDS_MESSAGE_AR =
 		`✳️ الأوامر المدعومة من البوت:
-	🤖 /commands 
+	🤖 /help 
 	عرض هذه الرسالة.
+	🤖 /settings
+	عرض واجهة تفاعليه لتغيير إعدادات البوت.
 	🤖 /log 
 	طباعة معلومات التصحيح للمطورين.
 	🤖 /init
@@ -87,13 +91,13 @@ export class TextMessages {
 	🤖 /forwarding on|off
 	⚙️ عرض ما إذا كان وضع التحويل مفعلًا أم لا .
 	📌 تشغيل أو إيقاف إعادة توجيه رسائل المستخدمين أو إرسالها بدون إعادة توجيه.
-	🤖 /bannedUsers
+	🤖 /bannedusers
 	عرض جميع المستخدمين المحظورين.
 	🤖 /ban <user ID>
 	حظر المستخدم الذي يمتلك معرف المستخدم المحدد.
 	🤖 /unban <user ID>
 	إزالة المستخدم الذي يمتلك معرف المستخدم المحدد من قائمة المحظورين.
-	🤖 /language ar|en|
+	🤖 /language ar|en
 	⚙️ عرض لغة البوت.
 	تحويل لغة البوت إلي العربية (ar) أو الإنجليزية (en)📌.`;
 

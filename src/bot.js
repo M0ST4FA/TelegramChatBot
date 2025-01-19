@@ -47,7 +47,9 @@ bot.on('message', async (msg) => {
 
 bot.on('callback_query', async (callbackQuery) => {
   const queryType = callbackQuery.data;
+  const isAdminMessage = callbackQuery.message.chat.id == BotInfo.ADMIN_CHAT_ID;
   const user = callbackQuery.from;
+
   const editMessageReplyMarkupOptions = {
     chat_id: callbackQuery.message.chat.id,
     inline_message_id: callbackQuery.inline_message_id,
@@ -55,86 +57,126 @@ bot.on('callback_query', async (callbackQuery) => {
   }
   let doNotGoToMain = false;
 
-  try {
+  console.log(callbackQuery.message);
 
-    if (queryType.startsWith('unban')) {
+  if (isAdminMessage) {
+    try {
 
-      const regex = /\d+/.exec(queryType);
+      if (queryType.startsWith('unban')) {
 
-      await users.unbanUser({ id: regex[0] });
+        const regex = /\d+/.exec(queryType);
 
-      await bot.editMessageReplyMarkup({ inline_keyboard: await CommandHandler.getBannedUsersKeyboard() }, editMessageReplyMarkupOptions);
+        await users.unbanUser({ id: regex[0] });
 
-      doNotGoToMain = true;
+        await bot.editMessageReplyMarkup({ inline_keyboard: await CommandHandler.getBannedUsersKeyboard() }, editMessageReplyMarkupOptions);
+
+        doNotGoToMain = true;
+      }
+      else
+        switch (queryType) {
+
+          case 'toggle_sign_messages': {
+            const adminSigns = await admins.adminSigns(user);
+            if (adminSigns)
+              await admins.disableSigning(user)
+            else
+              await admins.enableSigning(user);
+
+            break;
+          }
+
+          case 'toggle_forwarding': {
+            const forwarding = settings.forwardMode();
+            await settings.setForwardMode(!forwarding);
+
+            break;
+          }
+
+          case 'toggle_replies': {
+            const replies = settings.replies();
+            await settings.setReplies(!replies);
+
+            break;
+          }
+
+          case 'change_language': {
+            await Promise.all([
+              bot.editMessageText(Diagnostics.languageSettingsMessage(), editMessageReplyMarkupOptions),
+            ])
+
+            await bot.editMessageReplyMarkup({ inline_keyboard: CommandHandler.getLanguageMenuKeyboard() }, editMessageReplyMarkupOptions)
+            doNotGoToMain = true;
+            break;
+          }
+
+          case 'set_language_arabic': {
+            await Promise.all([
+              settings.setLanguage('ar'),
+            ])
+            break;
+          }
+
+          case 'set_language_english': {
+            await Promise.all([
+              settings.setLanguage('en'),
+            ])
+
+            break;
+          }
+
+          case 'manage_banned_users': {
+            await Promise.all([
+              bot.editMessageText(Diagnostics.manageBannedUsersMessage(), editMessageReplyMarkupOptions),
+            ])
+
+            await bot.editMessageReplyMarkup({ inline_keyboard: await CommandHandler.getBannedUsersKeyboard() }, editMessageReplyMarkupOptions)
+
+            doNotGoToMain = true;
+            break;
+          }
+
+          case 'move_to_main_menu': {
+            break; // The default behavior is displaying the main menu
+          }
+
+          case 'finish_editing_admin_settings': {
+            bot.deleteMessage(callbackQuery.message.chat.id, callbackQuery.message.message_id);
+            doNotGoToMain = true;
+            break;
+          }
+
+        }
+
+      await Promise.all([
+        doNotGoToMain ? null : bot.editMessageReplyMarkup({ inline_keyboard: await CommandHandler.getAdminSettingsKeyboard(user) }, editMessageReplyMarkupOptions),
+        doNotGoToMain ? null : bot.editMessageText(Diagnostics.settingsMessage(), editMessageReplyMarkupOptions),
+      ]);
+
+      setTimeout(bot.answerCallbackQuery.bind(bot, callbackQuery.id), 500);
+    } catch (error) {
+      console.log(error.message);
     }
-    else
+  }
+  else {
+
+    try {
       switch (queryType) {
 
-        case 'toggle_sign_messages': {
-          const adminSigns = await admins.adminSigns(user);
-          if (adminSigns)
-            await admins.disableSigning(user)
+        case 'toggle_private_mode': {
+          const userIsPrivate = await users.isUserPrivate(user);
+          if (userIsPrivate)
+            await users.makeUserNonPrivate(user);
           else
-            await admins.enableSigning(user);
+            await users.makeUserPrivate(user);
 
           break;
         }
 
-        case 'toggle_forwarding': {
-          const forwarding = settings.forwardMode();
-          await settings.setForwardMode(!forwarding);
+        case 'change_active_channel': {
 
-          break;
         }
 
-        case 'toggle_replies': {
-          const replies = settings.replies();
-          await settings.setReplies(!replies);
-
-          break;
-        }
-
-        case 'change_language': {
-          await Promise.all([
-            bot.editMessageText(Diagnostics.languageSettingsMessage(), editMessageReplyMarkupOptions),
-          ])
-
-          await bot.editMessageReplyMarkup({ inline_keyboard: CommandHandler.getLanguageMenuKeyboard() }, editMessageReplyMarkupOptions)
-          doNotGoToMain = true;
-          break;
-        }
-
-        case 'set_language_arabic': {
-          await Promise.all([
-            settings.setLanguage('ar'),
-          ])
-          break;
-        }
-
-        case 'set_language_english': {
-          await Promise.all([
-            settings.setLanguage('en'),
-          ])
-
-          break;
-        }
-
-        case 'manage_banned_users': {
-          await Promise.all([
-            bot.editMessageText(Diagnostics.manageBannedUsersMessage(), editMessageReplyMarkupOptions),
-          ])
-
-          await bot.editMessageReplyMarkup({ inline_keyboard: await CommandHandler.getBannedUsersKeyboard() }, editMessageReplyMarkupOptions)
-
-          doNotGoToMain = true;
-          break;
-        }
-
-        case 'move_to_main_menu': {
-          break; // The default behavior is displaying the main menu
-        }
-
-        case 'finish_editing_settings': {
+        case 'finish_editing_user_settings': {
           bot.deleteMessage(callbackQuery.message.chat.id, callbackQuery.message.message_id);
           doNotGoToMain = true;
           break;
@@ -142,16 +184,18 @@ bot.on('callback_query', async (callbackQuery) => {
 
       }
 
-    await Promise.all([
-      doNotGoToMain ? null : bot.editMessageReplyMarkup({ inline_keyboard: await CommandHandler.getSettingsKeyboard(user) }, editMessageReplyMarkupOptions),
-      doNotGoToMain ? null : bot.editMessageText(Diagnostics.settingsMessage(), editMessageReplyMarkupOptions),
-    ]);
+      await Promise.all([
+        doNotGoToMain ? null : bot.editMessageReplyMarkup({ inline_keyboard: await CommandHandler.getUserSettingsKeyboard(user) }, editMessageReplyMarkupOptions),
+        doNotGoToMain ? null : bot.editMessageText(Diagnostics.settingsMessage(), editMessageReplyMarkupOptions),
+      ]);
 
-    setTimeout(bot.answerCallbackQuery.bind(bot, callbackQuery.id), 500);
-  } catch (error) {
-    console.log(error.message);
+      setTimeout(bot.answerCallbackQuery.bind(bot, callbackQuery.id), 500);
+    }
+    catch (err) {
+      console.log(err.message);
+    }
+
   }
-
 })
 
 bot.on('webhook_error', async (error) => {

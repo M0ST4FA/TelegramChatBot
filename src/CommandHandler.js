@@ -66,6 +66,18 @@ const unbanChat = async function (chatId, unbanMsgId) {
 
 const initializeBot = async function () {
 
+  const adminCommands = [
+    { command: 'help', description: 'prints the help message.' },
+    { command: 'settings', description: 'opens the interface for editing bot settings.' },
+    { command: 'log', description: 'logs useful information for developers.' },
+  ];
+
+  const userCommands = [
+    { command: 'help', description: 'prints the help message.' },
+    { command: 'settings', description: 'opens the interface for editing bot settings.' },
+    { command: 'private', description: 'depending on arguments: prints the private mode state of the user or sets the private mode on or off.' }
+  ];
+
   const initializedObj = await prisma.setting.findUnique({
     where: {
       key: 'initialized'
@@ -86,7 +98,11 @@ const initializeBot = async function () {
     { key: 'initialized', value: JSON.stringify(true) }
   ];
 
-  const settingPromiseArr = [];
+  const settingPromiseArr = [
+    bot.setMyCommands(adminCommands, { scope: { type: 'all_group_chats' } }),
+    bot.setMyCommands(userCommands, { scope: { type: 'all_private_chats' } }),
+  ];
+
   for (const setting of settings)
     settingPromiseArr.push(prisma.setting.create(
       {
@@ -94,7 +110,8 @@ const initializeBot = async function () {
       }
     ));
 
-  await Promise.allSettled(settingPromiseArr);
+  await Promise.all(settingPromiseArr);
+
   bot.sendMessage(BotInfo.ADMIN_CHAT_ID, 'Initialized bot.');
 
   return true;
@@ -167,7 +184,7 @@ export default class CommandHandler {
     return keyboard;
   }
 
-  static async getSettingsKeyboard(user) {
+  static async getAdminSettingsKeyboard(user) {
 
     const resArray = await Promise.all([
       admins.adminSigns(user)
@@ -208,11 +225,45 @@ export default class CommandHandler {
       [{ text: repliesButtonText, callback_data: 'toggle_replies' }],
       [{ text: languageButtonText, callback_data: 'change_language' }],
       [{ text: manageBannedUsersButtonText, callback_data: 'manage_banned_users' }],
-      [{ text: finishButtonText, callback_data: 'finish_editing_settings' }],
+      [{ text: finishButtonText, callback_data: 'finish_editing_admin_settings' }],
     ]
 
     return keyboard;
   };
+
+  static async getActiveChannelKeyboard() {
+
+  }
+
+  static async getUserSettingsKeyboard(user) {
+
+    const resArray = await Promise.all([
+      users.isUserPrivate(user)
+    ]);
+
+    const language = settings.language();
+    const userIsPrivate = resArray[0];
+
+    let pirvateButtonText = '';
+    let activeChannelButtonText = '';
+
+    if (language == 'ar') {
+      pirvateButtonText = `🔐 الوضع الخاص (البرايفت): ${Diagnostics.boolMessage(userIsPrivate)}`;
+      // activeChannelButtonText = `📬 القناة التي يتم إرسال الرسائل إليها: ${Diagnostics.boolMessage(userIsPrivate)}`;
+    }
+    else {
+      pirvateButtonText = `🔐 Private Mode: ${Diagnostics.boolMessage(userIsPrivate)}`;
+      // activeChannelButtonText = `📬 Active Channel: ${Diagnostics.boolMessage(userIsPrivate)}`;
+    }
+
+    const keyboard = [
+      [{ text: pirvateButtonText, callback_data: 'toggle_private_mode' }],
+      // [{ text: activeChannelButtonText, callback_data: 'change_active_channel' }],
+      [{ text: Diagnostics.finishMessage(), callback_data: 'finish_editing_user_settings' }],
+    ]
+
+    return keyboard;
+  }
 
   static async #mapForwardedMessageToUserChatID(adminMsg) {
 
@@ -236,23 +287,21 @@ export default class CommandHandler {
     if (msgText[0] != '/')
       return false;
 
-    if (msgText == '/log') {
+    if (msgText == '/help')
+      sendDiagnosticMessage(DiagnosticMessage.ADMIN_COMMANDS_MESSAGE, BotInfo.ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id });
+    else if (msgText == '/log') {
       bot.sendMessage(BotInfo.ADMIN_CHAT_ID, `Reimplement this command.`);
       return true;
-    }
+    } else if (msgText == '/init')
+      await initializeBot();
     else if (msgText == '/settings') {
-      const keyboard = await CommandHandler.getSettingsKeyboard(msg.from);
+      const keyboard = await CommandHandler.getAdminSettingsKeyboard(msg.from);
       bot.sendMessage(BotInfo.ADMIN_CHAT_ID, Diagnostics.settingsMessage(), {
         reply_markup: {
           inline_keyboard: keyboard
         }
       });
-    }
-    else if (msgText == '/commands')
-      sendDiagnosticMessage(DiagnosticMessage.ADMIN_COMMANDS_MESSAGE, BotInfo.ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id });
-    else if (msgText == '/init')
-      await initializeBot();
-    else if (msgText.startsWith('/sign')) {
+    } else if (msgText.startsWith('/sign')) {
 
       if (msgText == '/sign') {
         sendDiagnosticMessage(DiagnosticMessage.ADMIN_SIGN_STATE_MESSAGE, BotInfo.ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id, user: msg.from })
@@ -554,9 +603,7 @@ export default class CommandHandler {
       user: msg.from
     }
 
-    if (msgText == '/commands')
-      sendDiagnosticMessage(DiagnosticMessage.USER_COMMANDS_MESSAGE, userChatId, options);
-    else if (msgText == '/start') {
+    if (msgText == '/start') {
       if (await users.getUser(msg.from.id)) // If the user has already /start ed the chat
         sendDiagnosticMessage(DiagnosticMessage.USER_CHAT_HAS_ALREADY_STARTED, userChatId, options);
       else
@@ -566,6 +613,16 @@ export default class CommandHandler {
         ]);
 
       return true;
+    }
+    else if (msgText == '/help')
+      sendDiagnosticMessage(DiagnosticMessage.USER_COMMANDS_MESSAGE, userChatId, options);
+    else if (msgText == '/settings') {
+      const keyboard = await CommandHandler.getUserSettingsKeyboard(msg.from);
+      bot.sendMessage(userChatId, Diagnostics.settingsMessage(), {
+        reply_markup: {
+          inline_keyboard: keyboard
+        }
+      });
     }
     else if (msgText.startsWith('/private')) {
 

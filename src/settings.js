@@ -452,6 +452,14 @@ class Users {
     return true;
   }
 
+  // ACTIVE CHANNEL
+  async getActiveChannel(user) {
+    const userObj = await this.getUser(user.id);
+
+    const id = userObj?.activeChannelId;
+
+  }
+
   static #instance = new Users();
 
   static async instance() {
