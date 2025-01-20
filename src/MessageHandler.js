@@ -267,6 +267,16 @@ export default class MessageHandler {
 
   static async sendUserMessage(msg) {
 
+    // Check if the user's message is a reply to a forwarded message
+    const replyToMessage = msg.reply_to_message;
+
+    // If the message is a reply to another message
+    if (replyToMessage && replyToMessage.message_id)
+      // Handle potential commands first
+      if (await CommandHandler.handleUserChatReplyCommands(msg))
+        return true;
+
+    // Get the private mode status of the user
     const userIsPrivate = await users.isUserPrivate(msg.from);
 
     // If forwarding mode is enabled AND also the user must not be in private mode

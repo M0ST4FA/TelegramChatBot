@@ -36,7 +36,9 @@ export const DiagnosticMessage = Object.freeze({
   USER_PRIVATE_MODE_CHANGED_MESSAGE: 30,
   USER_PRIVATE_STATE_MESSAGE: 31,
   ADMIN_INIT_BOT_MESSAGE: 32,
-  BOT_IS_ALREADY_INITIALIZED_MESSAGE: 33
+  BOT_IS_ALREADY_INITIALIZED_MESSAGE: 33,
+  ADMIN_DELETING_WRONG_MESSAGE: 34,
+  USER_DELETING_WRONG_MESSAGE: 35
 })
 
 export const sendDiagnosticMessage = async function (messageType, chatId, opts = {}) {
@@ -686,6 +688,41 @@ export const sendDiagnosticMessage = async function (messageType, chatId, opts =
       }
       else {
         const msg = `Bot has already started.\n${botSenderMsg}`;
+        bot.sendMessage(chatId, msg, {
+          ...options,
+          ...(getEntities(msg))
+        });
+      }
+      break;
+    }
+    case DiagnosticMessage.ADMIN_DELETING_WRONG_MESSAGE: {
+      if (settings.language() == "ar") {
+        const msg = `الرسالة التي تحاول حذفها هي رسالة مستخدم. لا يستطيع المشرفون مسح رسائل المستخدمين.\n${botSenderMsg}`;
+        bot.sendMessage(chatId, msg, {
+          ...options,
+          ...(getEntities(msg))
+        });
+      }
+      else {
+        const msg = `The message you're trying to delete is a user message. Admins can not delete user messages.\n${botSenderMsg}`;
+        bot.sendMessage(chatId, msg, {
+          ...options,
+          ...(getEntities(msg))
+        });
+      }
+      break;
+    }
+
+    case DiagnosticMessage.USER_DELETING_WRONG_MESSAGE: {
+      if (settings.language() == "ar") {
+        const msg = `الرسالة التي تحاول حذفها هي رسالة مشرف. لا يستطيع المستخدمون مسح رسائل المشرفين.\n${botSenderMsg}`;
+        bot.sendMessage(chatId, msg, {
+          ...options,
+          ...(getEntities(msg))
+        });
+      }
+      else {
+        const msg = `The message you're trying to delete is an admin message. Users can not delete admin messages.\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
           ...(getEntities(msg))

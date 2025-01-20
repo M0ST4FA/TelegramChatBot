@@ -469,8 +469,8 @@ export default class CommandHandler {
     if (!userCommands.includes(text))
       return false;
 
-    const replyToMessage = msg.reply_to_message;
-    const replyToMessageId = replyToMessage.message_id;
+    const replyToMessage = msg?.reply_to_message;
+    const replyToMessageId = replyToMessage?.message_id;
 
     if (text == "delete" || text == "عومر") {
 
@@ -482,7 +482,7 @@ export default class CommandHandler {
       }
 
       if (message.forwarded) {
-        bot.sendMessage(BotInfo.ADMIN_CHAT_ID, 'Trying to delete a user message. You can only delete admin messages.', { reply_to_message_id: replyToMessageId });
+        sendDiagnosticMessage(DiagnosticMessage.ADMIN_DELETING_WRONG_MESSAGE, chatId, { reply_to_message_id: replyToMessageId });
         return true;
       }
 
@@ -647,6 +647,46 @@ export default class CommandHandler {
     }
     else
       sendDiagnosticMessage(DiagnosticMessage.UNKNOWN_COMMAND, userChatId, { reply_to_message_id: msg.message_id })
+
+    return true;
+  }
+
+  static handleUserChatReplyCommands = async function (msg) { // msg must be a reply to another message
+
+    const userCommands = ["delete", "عومر"];
+
+    if (!msg.text)
+      return false;
+
+    const text = msg.text.toLowerCase();
+
+    if (!userCommands.includes(text))
+      return false;
+
+    const chatId = msg.chat.id;
+    const replyToMessage = msg?.reply_to_message;
+    const replyToMessageId = replyToMessage?.message_id;
+
+    if (text == "delete" || text == "عومر") {
+
+      const message = await messages.getMessage(replyToMessage);
+
+      if (!message) {
+        sendDiagnosticMessage(DiagnosticMessage.MESSAGE_NOT_PRESENT_BOT_DATA_STRUCTURES, chatId, { reply_to_message_id: replyToMessageId });
+        return true;
+      }
+
+      if (!message.forwarded) {
+        sendDiagnosticMessage(DiagnosticMessage.USER_DELETING_WRONG_MESSAGE, chatId, { reply_to_message_id: replyToMessageId });
+        return true;
+      }
+
+      await Promise.allSettled([
+        messages.deleteMessage(message),
+        sendDiagnosticMessage(DiagnosticMessage.DELETED_MESSAGE, chatId, { reply_to_message_id: replyToMessageId })
+      ]);
+
+    }
 
     return true;
   }
