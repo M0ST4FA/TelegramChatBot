@@ -57,8 +57,6 @@ bot.on('callback_query', async (callbackQuery) => {
   }
   let doNotGoToMain = false;
 
-  console.log(callbackQuery.message);
-
   if (isAdminMessage) {
     try {
 

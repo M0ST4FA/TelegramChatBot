@@ -34,7 +34,9 @@ export const DiagnosticMessage = Object.freeze({
   BOT_REPLIES_SETTING_MESSAGE: 28,
   ADMIN_SIGN_STATE_MESSAGE: 29,
   USER_PRIVATE_MODE_CHANGED_MESSAGE: 30,
-  USER_PRIVATE_STATE_MESSAGE: 31
+  USER_PRIVATE_STATE_MESSAGE: 31,
+  ADMIN_INIT_BOT_MESSAGE: 32,
+  BOT_IS_ALREADY_INITIALIZED_MESSAGE: 33
 })
 
 export const sendDiagnosticMessage = async function (messageType, chatId, opts = {}) {
@@ -657,6 +659,40 @@ export const sendDiagnosticMessage = async function (messageType, chatId, opts =
           });
       }
       break;
+    case DiagnosticMessage.ADMIN_INIT_BOT_MESSAGE:
+      if (settings.language() == "ar") {
+        const msg = `بدأ البوت.\n${botSenderMsg}`;
+        bot.sendMessage(chatId, msg, {
+          ...options,
+          ...(getEntities(msg))
+        });
+      }
+      else {
+        const msg = `Bot has started.\n${botSenderMsg}`;
+        bot.sendMessage(chatId, msg, {
+          ...options,
+          ...(getEntities(msg))
+        });
+      }
+      sendDiagnosticMessage(DiagnosticMessage.ADMIN_COMMANDS_MESSAGE, chatId);
+      break;
+    case DiagnosticMessage.BOT_IS_ALREADY_INITIALIZED_MESSAGE: {
+      if (settings.language() == "ar") {
+        const msg = `لقد بدأ البوت بالفعل.\n${botSenderMsg}`;
+        bot.sendMessage(chatId, msg, {
+          ...options,
+          ...(getEntities(msg))
+        });
+      }
+      else {
+        const msg = `Bot has already started.\n${botSenderMsg}`;
+        bot.sendMessage(chatId, msg, {
+          ...options,
+          ...(getEntities(msg))
+        });
+      }
+      break;
+    }
 
   }
 

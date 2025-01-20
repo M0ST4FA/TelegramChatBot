@@ -64,7 +64,7 @@ const unbanChat = async function (chatId, unbanMsgId) {
   return true;
 }
 
-const initializeBot = async function () {
+const initializeBot = async function (cmdMsg) {
 
   const initializedObj = await prisma.setting.findUnique({
     where: {
@@ -75,7 +75,9 @@ const initializeBot = async function () {
   const initialized = initializedObj ? initializedObj.value : false;
 
   if (initialized) {
-    bot.sendMessage(BotInfo.ADMIN_CHAT_ID, 'Bot is already initialized.');
+    sendDiagnosticMessage(DiagnosticMessage.BOT_IS_ALREADY_INITIALIZED_MESSAGE, BotInfo.ADMIN_CHAT_ID, {
+      reply_to_message_id: cmdMsg.message_id
+    })
     return true;
   }
 
@@ -100,11 +102,12 @@ const initializeBot = async function () {
 
   await Promise.all(settingPromiseArr);
 
-  bot.sendMessage(BotInfo.ADMIN_CHAT_ID, 'Initialized bot.');
+  sendDiagnosticMessage(DiagnosticMessage.ADMIN_INIT_BOT_MESSAGE, BotInfo.ADMIN_CHAT_ID, {
+    reply_to_message_id: cmdMsg.message_id
+  })
 
   return true;
 }
-
 export default class CommandHandler {
 
   static getMainMenuKeyboardButton() {
@@ -281,7 +284,7 @@ export default class CommandHandler {
       bot.sendMessage(BotInfo.ADMIN_CHAT_ID, `Reimplement this command.`);
       return true;
     } else if (msgText == `/start@${BotInfo.BOT_USERNAME}`)
-      await initializeBot();
+      await initializeBot(msg);
     else if (msgText == `/settings@${BotInfo.BOT_USERNAME}`) {
       const keyboard = await CommandHandler.getAdminSettingsKeyboard(msg.from);
       bot.sendMessage(BotInfo.ADMIN_CHAT_ID, Diagnostics.settingsMessage(), {
