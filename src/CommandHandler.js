@@ -66,18 +66,6 @@ const unbanChat = async function (chatId, unbanMsgId) {
 
 const initializeBot = async function () {
 
-  const adminCommands = [
-    { command: 'help', description: 'prints the help message.' },
-    { command: 'settings', description: 'opens the interface for editing bot settings.' },
-    { command: 'log', description: 'logs useful information for developers.' },
-  ];
-
-  const userCommands = [
-    { command: 'help', description: 'prints the help message.' },
-    { command: 'settings', description: 'opens the interface for editing bot settings.' },
-    { command: 'private', description: 'depending on arguments: prints the private mode state of the user or sets the private mode on or off.' }
-  ];
-
   const initializedObj = await prisma.setting.findUnique({
     where: {
       key: 'initialized'
@@ -99,8 +87,8 @@ const initializeBot = async function () {
   ];
 
   const settingPromiseArr = [
-    bot.setMyCommands(adminCommands, { scope: { type: 'all_group_chats' } }),
-    bot.setMyCommands(userCommands, { scope: { type: 'all_private_chats' } }),
+    bot.setMyCommands(Diagnostics.adminCommands(), { scope: { type: 'all_group_chats' } }),
+    bot.setMyCommands(Diagnostics.userCommands(), { scope: { type: 'all_private_chats' } }),
   ];
 
   for (const setting of settings)
@@ -123,18 +111,18 @@ export default class CommandHandler {
     const language = settings.language();
 
     if (language == 'ar')
-      return [{ text: '➡️ العودة إلي القائمة الرئيسية', callback_data: 'move_to_main_menu' }];
+      return [{ text: '↩️ العودة إلي القائمة الرئيسية', callback_data: 'move_to_main_menu' }];
     else
-      return [{ text: '⬅️ Back to Main Menu', callback_data: 'move_to_main_menu' }];
+      return [{ text: '↪️ Back to Main Menu', callback_data: 'move_to_main_menu' }];
   }
 
   static getLanguageMenuKeyboard() {
     const language = settings.language();
 
     const keyboard = [
-      language == 'en' ?
-        [{ text: '\uD83C\uDDF8\uD83C\uDDE6 عربي', callback_data: 'set_language_arabic' }] :
-        [{ text: '\uD83C\uDDFA\uD83C\uDDF8 English', callback_data: 'set_language_english' }],
+      language === 'ar' ?
+        [{ text: '\uD83C\uDDFA\uD83C\uDDF8 English', callback_data: 'set_language_english' }] :
+        [{ text: '\uD83C\uDDF8\uD83C\uDDE6 عربي', callback_data: 'set_language_arabic' }],
 
       CommandHandler.getMainMenuKeyboardButton()
     ]
@@ -287,28 +275,28 @@ export default class CommandHandler {
     if (msgText[0] != '/')
       return false;
 
-    if (msgText == '/help')
+    if (msgText == `/help@${BotInfo.BOT_USERNAME}`)
       sendDiagnosticMessage(DiagnosticMessage.ADMIN_COMMANDS_MESSAGE, BotInfo.ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id });
-    else if (msgText == '/log') {
+    else if (msgText == `/log@${BotInfo.BOT_USERNAME}`) {
       bot.sendMessage(BotInfo.ADMIN_CHAT_ID, `Reimplement this command.`);
       return true;
-    } else if (msgText == '/init')
+    } else if (msgText == `/start@${BotInfo.BOT_USERNAME}`)
       await initializeBot();
-    else if (msgText == '/settings') {
+    else if (msgText == `/settings@${BotInfo.BOT_USERNAME}`) {
       const keyboard = await CommandHandler.getAdminSettingsKeyboard(msg.from);
       bot.sendMessage(BotInfo.ADMIN_CHAT_ID, Diagnostics.settingsMessage(), {
         reply_markup: {
           inline_keyboard: keyboard
         }
       });
-    } else if (msgText.startsWith('/sign')) {
+    } else if (msgText.startsWith(`/sign@${BotInfo.BOT_USERNAME}`)) {
 
-      if (msgText == '/sign') {
+      if (msgText == `/sign@${BotInfo.BOT_USERNAME}`) {
         sendDiagnosticMessage(DiagnosticMessage.ADMIN_SIGN_STATE_MESSAGE, BotInfo.ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id, user: msg.from })
         return true;
       }
 
-      const regexMatch = /\/sign (on|off)/.exec(msgText);
+      const regexMatch = /\/sign@.+ (on|off)/.exec(msgText);
 
       if (!regexMatch) {
         sendDiagnosticMessage(DiagnosticMessage.INCORRECT_FORMAT_OF_COMMAND, BotInfo.ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id, correct_format: '/sign on\\|off\\|' })
@@ -330,14 +318,14 @@ export default class CommandHandler {
         sendDiagnosticMessage(DiagnosticMessage.USER_MESSAGES_WILL_BE_SIGNED_MESSAGE, BotInfo.ADMIN_CHAT_ID, options);
       }
 
-    } else if (msgText.startsWith('/replies')) {
+    } else if (msgText.startsWith(`/replies@${BotInfo.BOT_USERNAME}`)) {
 
-      if (msgText == '/replies') {
+      if (msgText == `/replies@${BotInfo.BOT_USERNAME}`) {
         sendDiagnosticMessage(DiagnosticMessage.BOT_REPLIES_SETTING_MESSAGE, BotInfo.ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id })
         return true;
       }
 
-      const regexMatch = /\/replies (on|off)/.exec(msgText);
+      const regexMatch = /\/replies@.+ (on|off)/.exec(msgText);
 
       if (!regexMatch) {
         sendDiagnosticMessage(DiagnosticMessage.INCORRECT_FORMAT_OF_COMMAND, BotInfo.ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id, correct_format: '/replies on\\|off' })
@@ -358,14 +346,14 @@ export default class CommandHandler {
         sendDiagnosticMessage(DiagnosticMessage.SHOW_REPLIED_TO_MESSAGES_MESSAGE, BotInfo.ADMIN_CHAT_ID, options);
       }
 
-    } else if (msgText.startsWith('/forwarding')) {
+    } else if (msgText.startsWith(`/forwarding@${BotInfo.BOT_USERNAME}`)) {
 
-      if (msgText == '/forwarding') {
+      if (msgText == `/forwarding@${BotInfo.BOT_USERNAME}`) {
         sendDiagnosticMessage(DiagnosticMessage.BOT_FORWARDING_SETTING_MESSAGE, BotInfo.ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id })
         return true;
       }
 
-      const regexMatch = /\/forwarding (on|off)/.exec(msgText);
+      const regexMatch = /\/forwarding@.+ (on|off)/.exec(msgText);
 
       if (!regexMatch) {
         sendDiagnosticMessage(DiagnosticMessage.INCORRECT_FORMAT_OF_COMMAND, BotInfo.ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id, correct_format: '/forwarding on\\|off' })
@@ -386,7 +374,7 @@ export default class CommandHandler {
         sendDiagnosticMessage(DiagnosticMessage.FORWARDING_IS_ON_MESSAGE, BotInfo.ADMIN_CHAT_ID, options);
       }
 
-    } else if (msgText == '/bannedusers') {
+    } else if (msgText == `/bannedusers@${BotInfo.BOT_USERNAME}`) {
       const bndChatIds = await users.getBannedUserIds();
 
       if (bndChatIds.length == 0) {
@@ -415,8 +403,8 @@ export default class CommandHandler {
           });
       }
 
-    } else if (msgText.startsWith('/ban ')) {
-      const regexMatch = /\/ban (\d{8,})/.exec(msgText);
+    } else if (msgText.startsWith(`/ban@${BotInfo.BOT_USERNAME} `)) {
+      const regexMatch = /\/ban@.+ (\d{8,})/.exec(msgText);
 
       if (!regexMatch) {
         sendDiagnosticMessage(DiagnosticMessage.INCORRECT_FORMAT_OF_COMMAND, BotInfo.ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id, correct_format: '/ban <user ID>' })
@@ -426,8 +414,8 @@ export default class CommandHandler {
       const chatId = +regexMatch.at(1);
       banChat(chatId, msg.message_id);
 
-    } else if (msgText.startsWith('/unban ')) {
-      const regexMatch = /\/unban (\d{8,})/.exec(msgText);
+    } else if (msgText.startsWith(`/unban@${BotInfo.BOT_USERNAME} `)) {
+      const regexMatch = /\/unban@.+ (\d{8,})/.exec(msgText);
 
       if (!regexMatch) {
         sendDiagnosticMessage(DiagnosticMessage.INCORRECT_FORMAT_OF_COMMAND, BotInfo.ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id, correct_format: '/unban <user ID>' })
@@ -437,14 +425,14 @@ export default class CommandHandler {
       const chatId = +regexMatch.at(1);
       unbanChat(chatId, msg.message_id);
 
-    } else if (msgText.startsWith('/language')) {
+    } else if (msgText.startsWith(`/language@${BotInfo.BOT_USERNAME}`)) {
 
-      if (msgText == '/language') {
+      if (msgText == `/language@${BotInfo.BOT_USERNAME}`) {
         sendDiagnosticMessage(DiagnosticMessage.BOT_LANGUAGE_MESSAGE, BotInfo.ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id })
         return true;
       }
 
-      const regexMatch = /\/language (ar|en)/.exec(msgText);
+      const regexMatch = /\/language@.+ (ar|en)/.exec(msgText);
 
       if (!regexMatch) {
         sendDiagnosticMessage(DiagnosticMessage.INCORRECT_FORMAT_OF_COMMAND, BotInfo.ADMIN_CHAT_ID, { reply_to_message_id: msg.message_id, correct_format: '/language ar\\|en\\|' })

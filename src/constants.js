@@ -7,6 +7,7 @@ const { PrismaClient } = require('@prisma/client');
 export class BotInfo {
 	static BOT_TOKEN = process.env.BOT_TOKEN;
 	static BOT_NAME = process.env.BOT_NAME;
+	static BOT_USERNAME = process.env.BOT_USERNAME;
 	static ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID; // Replace with the chat ID you want to forward messages to
 	static PORT = process.env.PORT;
 	static WEBHOOK_URL = process.env.WEBHOOK_URL;
@@ -62,7 +63,7 @@ export class TextMessages {
 	🤖 /forwarding on|off
 	⚙️ Shows whether forwarding mode is on or not.
 	📌 Toggles forwarding user messages or sending them without forwarding.
-	🤖 /bannedUsers
+	🤖 /bannedusers
 	Lists all of the banned users.
 	🤖 /ban <user ID>
 	Bans the user with the ID <user ID> from the bot.
@@ -74,11 +75,11 @@ export class TextMessages {
 
 	static ADMIN_COMMANDS_MESSAGE_AR =
 		`✳️ الأوامر المدعومة من البوت:
-	🤖 /help 
+	🤖 /help
 	عرض هذه الرسالة.
 	🤖 /settings
 	عرض واجهة تفاعليه لتغيير إعدادات البوت.
-	🤖 /log 
+	🤖 /log
 	طباعة معلومات التصحيح للمطورين.
 	🤖 /init
 	تهيئة البوت. هذا الأمر يجب أن يستخدم في شات المشرفين في المرة الأولي التي يتم فيها استخدام البوت.

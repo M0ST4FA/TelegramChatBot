@@ -36,6 +36,7 @@ export const DiagnosticMessage = Object.freeze({
   USER_PRIVATE_MODE_CHANGED_MESSAGE: 30,
   USER_PRIVATE_STATE_MESSAGE: 31
 })
+
 export const sendDiagnosticMessage = async function (messageType, chatId, opts = {}) {
 
   const botSenderMsg = `${BotInfo.BOT_NAME}`;
@@ -697,6 +698,43 @@ export class Diagnostics {
       return language == 'ar' ? 'يعمل' : 'On';
     else
       return language == 'ar' ? 'مُعطَّل' : 'Off';
+  }
+
+  static adminCommands() {
+    return [
+      { command: 'help', description: 'prints the help message.' },
+      { command: 'settings', description: 'opens the interface for editing bot settings.' },
+      { command: 'log', description: 'logs useful information for developers.' },
+      { command: 'sign', description: 'shows whether admin messages are signed. can also be used to change signing status for an admin.' },
+      { command: 'replies', description: 'shows whether reply are on or off. can also be used to change this setting.' },
+      { command: 'forwarding', description: 'shows whether forwarding mode is on or off. can also be used to change this setting.' },
+      { command: 'bannedusers', description: 'displays a list of all banned users.' },
+      { command: 'ban', description: 'bans a user using their user ID.' },
+      { command: 'unban', description: 'unbans a user using their user ID.' },
+      { command: 'language', description: 'displays the current language of the bot. can also be used to change the language.' },
+    ]
+
+    // if (settings.language() == 'ar') {
+    //   return [
+    //     { command: 'help', description: 'طباعة رسالة المساعدة.' },
+    //     { command: 'settings', description: 'عرض واجهة تفاعليه لتغيير إعدادات البوت.' },
+    //     { command: 'log', description: 'طباعة معلومات التصحيح للمطورين.' },
+    //     { command: 'sign', description: 'عرض ما إذا كانت رسائل المشرف موقعة. يمكن أن يستخدم أيضًا في تغيير هذ الإعداد للمشرف.' },
+    //     { command: 'replies', description: 'عرض ما إذا كان المستخدم يسطتيع رؤية الرسالة التي تم الرد عليها. يمن أن يستخدم أيضا في تغيير هذا الإعداد.' },
+    //     { command: 'forwarding', description: 'عرض ما إذا الرسائل يتم تحويلها أم يتم إرسالها. يمكن أن يستخدم أيضًا في تغيير هذا الإعداد.' },
+    //     { command: 'bannedusers', description: 'عرض قائمة بالمستخدمين المحظورين.' },
+    //     { command: 'ban', description: 'حظر مستخدم باستخام معرفه.' },
+    //     { command: 'unban', description: 'إزالة الحظر عن مستخدم باستخدام معرفه.' },
+    //     { command: 'language', description: 'عرض لغة البوت. يمكن أيضًا أن يستخدم في تغيير اللغة..' },
+    //   ];
+  }
+
+  static userCommands() {
+    return [
+      { command: 'help', description: 'prints the help message.' },
+      { command: 'settings', description: 'opens the interface for editing bot settings.' },
+      { command: 'private', description: 'depending on arguments: prints the private mode state of the user or sets the private mode on or off.' }
+    ];
   }
 
 }
