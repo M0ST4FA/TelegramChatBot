@@ -191,6 +191,7 @@ export default class CommandHandler {
     let repliesButtonText = '';
     let languageButtonText = '';
     let manageBannedUsersButtonText = '';
+    let statisticsButtonText = '';
     let finishButtonText = '';
 
     if (language == 'ar') {
@@ -199,6 +200,7 @@ export default class CommandHandler {
       repliesButtonText = `🔎 إظهار الردود للمستخدم: ${replies ? 'مُشغَّل' : 'مُعطَّل'}`;
       languageButtonText = `🌍 لغة البوت: ${language == 'ar' ? 'اللغة العربية' : 'اللغة الإنجليزية'}`;
       manageBannedUsersButtonText = '🔐 إدارة المستخدمين المحظورين';
+      statisticsButtonText = '📊 الإحصائيات';
       finishButtonText = '✅ إنهاء';
     }
     else {
@@ -207,6 +209,7 @@ export default class CommandHandler {
       repliesButtonText = `🔍 Show Replies: ${replies ? 'On' : 'Off'}`;
       languageButtonText = `🌎 Bot Language: ${language == 'ar' ? 'Arabic' : 'English'}`;
       manageBannedUsersButtonText = '🔐 Manage Banned Users';
+      statisticsButtonText = '📊 Statistics';
       finishButtonText = '✅ Done';
     }
 
@@ -216,6 +219,7 @@ export default class CommandHandler {
       [{ text: repliesButtonText, callback_data: 'toggle_replies' }],
       [{ text: languageButtonText, callback_data: 'change_language' }],
       [{ text: manageBannedUsersButtonText, callback_data: 'manage_banned_users' }],
+      [{ text: statisticsButtonText, callback_data: 'statistics' }],
       [{ text: finishButtonText, callback_data: 'finish_editing_admin_settings' }],
     ]
 

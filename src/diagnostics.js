@@ -752,9 +752,30 @@ export class Diagnostics {
 
   static manageBannedUsersMessage() {
     const language = settings.language();
-    const msg = language == 'ar' ? '🔐 إدارة المستخدمين المحظورين' : '🔐 Manage Banned Users:';
+    const msg = language == 'ar' ? '🔐 إدارة المستخدمين المحظورين:' : '🔐 Manage Banned Users:';
 
     return msg;
+  }
+
+  static statisticsMessage(stats) {
+    const userCount = stats[0];
+    const bannedUserCount = users.getBannedUserIds().size;
+    const adminCount = stats[1];
+    const messageCount = stats[2];
+
+    if (settings.language() == 'ar')
+      return `📊 الإحصائيات:
+      👥 عدد المستخدمين: ${userCount}
+      🔒 عدد المستخدمين المحظورين: ${bannedUserCount}
+      🥸 عدد المشرفين: ${adminCount}
+      ✉️ عدد الرسائل المرسلة عن طريق البوت: ${messageCount}`;
+    else
+      return `📊 Statistics:
+      👥 Number of users: ${userCount}
+      🔒 Number of banned users: ${bannedUserCount}
+      🥸 Number of admins: ${adminCount}
+      ✉️ Number of messages sent through the bot: ${messageCount}`;
+
   }
 
   static finishMessage() {

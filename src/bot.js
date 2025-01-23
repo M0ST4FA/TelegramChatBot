@@ -1,4 +1,4 @@
-import { BotInfo, bot } from './constants.js';
+import { BotInfo, bot, prisma } from './constants.js';
 import { messages } from './common.js';
 import { admins, settings, users } from './settings.js';
 import CommandHandler from './CommandHandler.js';
@@ -137,6 +137,22 @@ bot.on('callback_query', async (callbackQuery) => {
             break; // The default behavior is displaying the main menu
           }
 
+          case 'statistics': {
+
+            const stats = await Promise.all([
+              prisma.user.count(),
+              prisma.admin.count(),
+              prisma.message.count(),
+            ]);
+
+            await Promise.all([
+              await bot.editMessageText(Diagnostics.statisticsMessage(stats), editMessageReplyMarkupOptions),
+              await bot.editMessageReplyMarkup({ inline_keyboard: [CommandHandler.getMainMenuKeyboardButton()] }, editMessageReplyMarkupOptions)
+            ])
+
+            doNotGoToMain = true;
+            break;
+          }
           case 'finish_editing_admin_settings': {
             bot.deleteMessage(callbackQuery.message.chat.id, callbackQuery.message.message_id);
             doNotGoToMain = true;

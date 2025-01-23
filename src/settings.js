@@ -368,7 +368,7 @@ class Users {
     return this.#bannedUserIds.has(userId);
   }
 
-  async getBannedUserIds() {
+  getBannedUserIds() {
     return this.#bannedUserIds;
   }
 

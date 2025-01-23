@@ -328,7 +328,9 @@ export class UserInfo {
     else if (user.id == 1359712574)
       fullName = 'بلاهيم يونس';
     else if (user.id == 1452323871)
-      fullName = 'عويس (الرفاعي)';
+      fullName = 'رفوعتي ملك التلخوصة';
+    else if (user.id == 6417171195)
+      fullName = 'جو الصباغ';
 
     return fullName;
   }
