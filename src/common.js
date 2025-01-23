@@ -323,9 +323,12 @@ export class UserInfo {
 
     let fullName = `${firstName} ${lastName}`.trim();
 
-    if (fullName == 'عمر عبدالعليم') {
-      fullName = 'عومر عبعليم آل دحيح'
-    }
+    if (user.id == 1837591645)
+      fullName = 'عومر عبعليم آل دحيح';
+    else if (user.id == 1359712574)
+      fullName = 'بلاهيم يونس';
+    else if (user.id == 1452323871)
+      fullName = 'عويس (الرفاعي)';
 
     return fullName;
   }

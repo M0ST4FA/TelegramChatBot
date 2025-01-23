@@ -17,12 +17,18 @@ export default class MessageHandler {
     let text = msg.text || '';
     text += caption;
     let quote = ''
+    let username = '';
+    let fullName = '';
 
     // The functions takes into account the state of the user
     if (chatId == BotInfo.ADMIN_CHAT_ID)
       quote = (await UserInfo.getResponderMessage(msg, false)).responderMsg;
-    else
-      quote = (await UserInfo.getSenderMessage(msg, false)).senderMsg;
+    else {
+      const senderInfo = await UserInfo.getSenderMessage(msg, false);
+      quote = senderInfo.senderMsg;
+      username = senderInfo.username;
+      fullName = senderInfo.fullName;
+    }
 
     text += `\n${quote}`;
     text = text.trim();
@@ -33,6 +39,9 @@ export default class MessageHandler {
         { type: 'blockquote', offset: text.indexOf(quote), length: quote.length }
       ] : []
     }
+
+    if ((chatId != BotInfo.ADMIN_CHAT_ID) && username == '@')
+      captionOption.caption_entities.push({ type: 'text_mention', offset: text.lastIndexOf(fullName), length: fullName.length, user: msg.from });
 
     const textOption = {
       text
@@ -223,7 +232,6 @@ export default class MessageHandler {
       MessageHandler.#getText(msg),
       replyToMessageId ? messages.getMessage(replyToMessage) : Promise.resolve(null)
     ])
-
 
     // PREPARE THE TEXT
     const { textOption, textQuoteOption, captionOption, quote } = resArray[0].value;

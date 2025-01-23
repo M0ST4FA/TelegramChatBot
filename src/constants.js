@@ -24,7 +24,7 @@ export class BotInfo {
 export const bot = new TelegramBot(BotInfo.BOT_TOKEN, {
 	polling: BotInfo.POLL,
 	webHook: BotInfo.POLL ? undefined : {
-		port: 8443
+		port: BotInfo.PORT
 	}
 });
 
@@ -52,7 +52,7 @@ export class TextMessages {
 	Shows an interactive and user friendly display for editing the admin settings of the bot.
 	🤖 /log
 	Prints debugging information for developers.
-	🤖 /init
+	🤖 /start
 	Initializes the bot. This must be used the first time the bot is used within an admin chat.
 	🤖 /sign on|off
 	⚙️ Shows whether the messages of the admin that runs the command are signed or not.
@@ -81,7 +81,7 @@ export class TextMessages {
 	عرض واجهة تفاعليه لتغيير إعدادات البوت.
 	🤖 /log
 	طباعة معلومات التصحيح للمطورين.
-	🤖 /init
+	🤖 /start
 	تهيئة البوت. هذا الأمر يجب أن يستخدم في شات المشرفين في المرة الأولي التي يتم فيها استخدام البوت.
 	🤖 /sign on|off
 	⚙️ عرض ما إذا كانت رسائل المشرف موقعة أم لا.
