@@ -132,7 +132,10 @@ export default class MessageHandler {
     let sentMessageInOppositeChat;
 
     if (msg.text) {
-      const entities = [...msg.entities, ...options.caption_entities];
+      let entities = options.caption_entities;
+
+      if (msg.entities) entities = [...entities, ...msg.entities];
+
       options.entities = entities;
 
       sentMessageInOppositeChat = bot.sendMessage(
@@ -258,7 +261,10 @@ export default class MessageHandler {
       !msg.sticker &&
       !msg.poll
     ) {
-      const entities = [...msg.caption_entities, ...options.caption_entities];
+      let entities = options.caption_entities;
+
+      if (msg.caption_entities)
+        entities = [...entities, ...msg.caption_entities];
 
       options.caption_entities = entities;
 
