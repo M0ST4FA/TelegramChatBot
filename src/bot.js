@@ -35,9 +35,9 @@ bot.on('message', async msg => {
   } catch (err) {
     console.log(err);
 
-    const parsedBody = err.response.body;
+    const parsedBody = err.response?.body;
 
-    if (parsedBody.error_code === 403)
+    if (parsedBody?.error_code === 403)
       sendDiagnosticMessage(
         DiagnosticMessage.BOT_WAS_BLOCKED_BY_USER,
         BotInfo.ADMIN_CHAT_ID,

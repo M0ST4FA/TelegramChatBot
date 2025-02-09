@@ -11,7 +11,7 @@ export default class MessageHandler {
   // Queueing
   static #messageQueue = new Queue();
   static #isProcessingQueue = false;
-  static #MESSAGE_DELAY = 1000 / 30;
+  static #MESSAGE_DELAY = 1000 / 20;
 
   // Helper methods
 
@@ -131,41 +131,16 @@ export default class MessageHandler {
   static async #sendMessage(sendToChatId, msg, options) {
     let sentMessageInOppositeChat;
 
-    function formatTextWithEntities(text, entities) {
-      let formattedText = text;
-      let offsetShift = 0;
+    if (msg.text) {
+      const entities = [...msg.entities, ...options.caption_entities];
+      options.entities = entities;
 
-      entities.forEach(entity => {
-        let start = entity.offset + offsetShift;
-        let end = start + entity.length;
-        let original = formattedText.substring(start, end);
-
-        let replacement;
-        if (entity.type === 'bold') replacement = `<b>${original}</b>`;
-        else if (entity.type === 'italic') replacement = `<i>${original}</i>`;
-        else if (entity.type === 'underline')
-          replacement = `<u>${original}</u>`;
-        else if (entity.type === 'text_link')
-          replacement = `<a href="${entity.url}">${original}</a>`;
-        else return; // Ignore unknown types
-
-        formattedText =
-          formattedText.substring(0, start) +
-          replacement +
-          formattedText.substring(end);
-        offsetShift += replacement.length - original.length;
-      });
-
-      return formattedText;
-    }
-
-    if (msg.text)
       sentMessageInOppositeChat = bot.sendMessage(
         sendToChatId,
         options.text,
-        Object.assign(options, { parse_mode: 'HTML' }),
+        options,
       );
-    else if (msg.photo?.length > 0)
+    } else if (msg.photo?.length > 0)
       sentMessageInOppositeChat = bot.sendPhoto(
         sendToChatId,
         msg.photo.at(0).file_id,
@@ -283,6 +258,10 @@ export default class MessageHandler {
       !msg.sticker &&
       !msg.poll
     ) {
+      const entities = [...msg.caption_entities, ...options.caption_entities];
+
+      options.caption_entities = entities;
+
       bot
         .editMessageCaption(options.text, {
           chat_id: sendToChatId,
