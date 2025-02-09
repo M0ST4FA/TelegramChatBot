@@ -1,6 +1,6 @@
-import { UserInfo } from "./common.js";
-import { bot, BotInfo, TextMessages } from './constants.js'
-import { admins, settings, users } from "./settings.js";
+import { UserInfo } from './common.js';
+import { bot, BotInfo, TextMessages } from './constants.js';
+import { admins, settings, users } from './settings.js';
 
 export const DiagnosticMessage = Object.freeze({
   DELETED_MESSAGE: 0,
@@ -38,19 +38,31 @@ export const DiagnosticMessage = Object.freeze({
   ADMIN_INIT_BOT_MESSAGE: 32,
   BOT_IS_ALREADY_INITIALIZED_MESSAGE: 33,
   ADMIN_DELETING_WRONG_MESSAGE: 34,
-  USER_DELETING_WRONG_MESSAGE: 35
-})
+  USER_DELETING_WRONG_MESSAGE: 35,
+  BOT_WAS_BLOCKED_BY_USER: 36,
+});
 
-export const sendDiagnosticMessage = async function (messageType, chatId, opts = {}) {
-
+export const sendDiagnosticMessage = async function (
+  messageType,
+  chatId,
+  opts = {},
+) {
   const botSenderMsg = `${BotInfo.BOT_NAME}`;
   const options = {
-    ...opts
-  }
+    ...opts,
+  };
 
   const getEntities = function (msg) {
-    return { entities: [{ type: 'blockquote', offset: msg.lastIndexOf(botSenderMsg), length: botSenderMsg.length }] }
-  }
+    return {
+      entities: [
+        {
+          type: 'blockquote',
+          offset: msg.lastIndexOf(botSenderMsg),
+          length: botSenderMsg.length,
+        },
+      ],
+    };
+  };
 
   const user = opts.user;
   let username = '';
@@ -65,304 +77,287 @@ export const sendDiagnosticMessage = async function (messageType, chatId, opts =
 
   switch (messageType) {
     case DiagnosticMessage.DELETED_MESSAGE:
-      if (settings.language() == "ar") {
+      if (settings.language() == 'ar') {
         const msg = `تم مسح الرسالة.\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
-      }
-      else {
+      } else {
         const msg = `Deleted message.\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
       }
 
       break;
     case DiagnosticMessage.EDITED_MESSAGE_TEXT:
-      if (settings.language() == "ar") {
+      if (settings.language() == 'ar') {
         const msg = `تم تعديل نص الرسالة.\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
-      }
-      else {
+      } else {
         const msg = `Edited message text.\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
       }
 
       break;
     case DiagnosticMessage.EDITED_MESSAGE_CAPTION:
-      if (settings.language() == "ar") {
+      if (settings.language() == 'ar') {
         const msg = `تم تعديل تعليق الرسالة.\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
-      }
-      else {
+      } else {
         const msg = `Edited message caption.\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
       }
 
       break;
     case DiagnosticMessage.INCORRECT_FORMAT_OF_COMMAND:
-      if (settings.language() == "ar") {
+      if (settings.language() == 'ar') {
         const msg = `تركيب الأمر خاطئ. التركيب الصحيح هو:\n${opts.correct_format}\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
-      }
-      else {
+      } else {
         const msg = `Incorrect format of command. The correct format is: ${opts.correct_format}\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
       }
 
       break;
     case DiagnosticMessage.NO_BANNED_USERS_EXIST:
-      if (settings.language() == "ar") {
+      if (settings.language() == 'ar') {
         const msg = `لا يوجد مستخدمون محظورون.\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
-      }
-      else {
+      } else {
         const msg = `No banned users exist.\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
       }
 
       break;
     case DiagnosticMessage.DISPLAYING_BANNED_USERS_NOW:
-      if (settings.language() == "ar") {
+      if (settings.language() == 'ar') {
         const msg = `المستخدمون المحظورون:\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
-      }
-      else {
+      } else {
         const msg = `Banned users are:\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
       }
 
       break;
     case DiagnosticMessage.USER_BANNING_MESSAGE:
-      if (settings.language() == "ar") {
+      if (settings.language() == 'ar') {
         const msg = `لقد تعطل البوت مؤقتًا.\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
-      }
-      else {
+      } else {
         const msg = `You've been banned from the bot.\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
       }
 
       break;
     case DiagnosticMessage.ADMIN_BANNING_MESSAGE:
-      if (settings.language() == "ar") {
+      if (settings.language() == 'ar') {
         const msg1 = `لقد تم حظر المستخدم الذي يحمل المعرف (${userId}) من البوت.\n${botSenderMsg}`;
         const msg2 = `لقد تم حظر المستخدم ${userFullName} (${username}:${userId}) من البوت.\n${botSenderMsg}`;
         if (await users.isUserPrivate(user))
-          bot.sendMessage(chatId, msg1, { ...options, ...(getEntities(msg1)) });
+          bot.sendMessage(chatId, msg1, { ...options, ...getEntities(msg1) });
         else
-          bot.sendMessage(chatId, msg2, { ...options, ...(getEntities(msg2)) });
-      }
-      else {
+          bot.sendMessage(chatId, msg2, { ...options, ...getEntities(msg2) });
+      } else {
         const msg1 = `The user with ID ${userId} has been banned from the bot.\n${botSenderMsg}`;
         const msg2 = `The user ${userFullName} (${username}:${userId}) has been banned from the bot.\n${botSenderMsg}`;
         if (await users.isUserPrivate(user))
-          bot.sendMessage(chatId, msg1, { ...options, ...(getEntities(msg1)) });
+          bot.sendMessage(chatId, msg1, { ...options, ...getEntities(msg1) });
         else
-          bot.sendMessage(chatId, msg2, { ...options, ...(getEntities(msg2)) });
+          bot.sendMessage(chatId, msg2, { ...options, ...getEntities(msg2) });
       }
       break;
     case DiagnosticMessage.USER_NO_LONGER_BANNED_MESSAGE:
-      if (settings.language() == "ar")
+      if (settings.language() == 'ar')
         // bot.sendMessage(chatId, `أنت لم تعد محظورا من البوت.\n${botSenderMsg}`, options);
         break;
       else {
         const msg = `You're no longer banned from the bot.\n${botSenderMsg}`;
-        bot.sendMessage(chatId, msg, { ...options, ...(getEntities(msg)) });
+        bot.sendMessage(chatId, msg, { ...options, ...getEntities(msg) });
       }
       break;
     case DiagnosticMessage.ADMIN_USER_NO_LONGER_BANNED_MESSAGE:
-      if (settings.language() == "ar") {
+      if (settings.language() == 'ar') {
         const msg1 = `لقد تمت إزالة المستخدم الذي يحمل المعرف (${userId}) قائمة الحظر.\n${botSenderMsg}`;
         const msg2 = `لقد تمت إزالة المستخدم ${userFullName} (${username}:${userId}) من قائمة الحظر.\n${botSenderMsg}`;
 
         if (await users.isUserPrivate(user))
-          bot.sendMessage(chatId, msg1, { ...options, ...(getEntities(msg1)) });
+          bot.sendMessage(chatId, msg1, { ...options, ...getEntities(msg1) });
         else
-          bot.sendMessage(chatId, msg2, { ...options, ...(getEntities(msg2)) });
-      }
-      else {
+          bot.sendMessage(chatId, msg2, { ...options, ...getEntities(msg2) });
+      } else {
         const msg1 = `The user with ID ${userId} has been removed from the banned list.\n${botSenderMsg}`;
         const msg2 = `The user ${userFullName} (${username}:${userId}) has been removed from the banned list.\n${botSenderMsg}`;
 
         if (await users.isUserPrivate(user))
-          bot.sendMessage(chatId, msg1, { ...options, ...(getEntities(msg1)) });
+          bot.sendMessage(chatId, msg1, { ...options, ...getEntities(msg1) });
         else
-          bot.sendMessage(chatId, msg2, { ...options, ...(getEntities(msg2)) });
+          bot.sendMessage(chatId, msg2, { ...options, ...getEntities(msg2) });
       }
       break;
     case DiagnosticMessage.USER_IS_ALREADY_BANNED:
-      if (settings.language() == "ar") {
+      if (settings.language() == 'ar') {
         const msg = `المسختدم محظورٌ بالفعل. لإزالة الحظر, استخدم الأمر:\n/unban ${userId}.\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
-      }
-      else {
+      } else {
         const msg = `The user is already banned. To remove the ban, type\n/unban ${userId}.\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
       }
 
       break;
     case DiagnosticMessage.USER_IS_ALREADY_NOT_BANNED:
-      if (settings.language() == "ar") {
+      if (settings.language() == 'ar') {
         const msg = `المسختدم ليس محظورًا بالفعل. لحظر المستخدم, استخدم الأمر:\n/ban ${userId}.\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
-      }
-      else {
+      } else {
         const msg = `The user is already not banned. To ban them, type\n/ban ${userId}.\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
       }
 
       break;
     case DiagnosticMessage.MESSAGE_NOT_PRESENT_BOT_DATA_STRUCTURES:
-      if (settings.language() == "ar") {
+      if (settings.language() == 'ar') {
         const msg = `الرسالة ليست موجودة في قاعدة بيانات البوت.\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
-      }
-      else {
+      } else {
         const msg = `Message is not present in bot data structures.\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
       }
 
       break;
     case DiagnosticMessage.USER_INFO_MESSAGE:
     case DiagnosticMessage.BOT_LANGUAGE_CHANGE_MESSAGE:
-      if (settings.language() == "ar") {
+      if (settings.language() == 'ar') {
         const msg = `تم ضبط لغة البوت إلي العربية.\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
-      }
-      else {
+      } else {
         const msg = `The language of the bot has been set to English.\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
       }
 
       break;
     case DiagnosticMessage.BOT_LANGUAGE_MESSAGE:
-      if (settings.language() == "ar") {
+      if (settings.language() == 'ar') {
         const msg = `لغة البوت هي العربية. لتغيير اللغة, استخدم الأمر\n/language ar|en\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
-      }
-      else {
+      } else {
         const msg = `The language of the bot is English. To change language, use the command /language ar|en\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
       }
 
       break;
     case DiagnosticMessage.ADMIN_COMMANDS_MESSAGE:
-      if (settings.language() == "ar") {
+      if (settings.language() == 'ar') {
         const msg = `${TextMessages.ADMIN_COMMANDS_MESSAGE_AR}\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
-      }
-      else {
+      } else {
         const msg = `${TextMessages.ADMIN_COMMANDS_MESSAGE_EN}\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
       }
 
       break;
     case DiagnosticMessage.USER_COMMANDS_MESSAGE:
-      if (settings.language() == "ar") {
+      if (settings.language() == 'ar') {
         const msg = `${TextMessages.USER_COMMANDS_MESSAGE_AR}\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
-      }
-      else {
+      } else {
         const msg = `${TextMessages.USER_COMMANDS_MESSAGE_EN}\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
       }
 
       break;
     case DiagnosticMessage.UNKNOWN_COMMAND:
-      if (settings.language() == "ar") {
+      if (settings.language() == 'ar') {
         const msg = `أمر غير معروف.\n${botSenderMsg}`;
         await bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
-      }
-      else {
+      } else {
         const msg = `Unknown command.\n${botSenderMsg}`;
         await bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
       }
 
@@ -372,136 +367,128 @@ export const sendDiagnosticMessage = async function (messageType, chatId, opts =
         sendDiagnosticMessage(DiagnosticMessage.USER_COMMANDS_MESSAGE, chatId);
       break;
     case DiagnosticMessage.USER_MESSAGES_WILL_BE_SIGNED_MESSAGE:
-      if (settings.language() == "ar") {
+      if (settings.language() == 'ar') {
         const msg = `الرسائل المرسلة من قبل ${userFullName} (${username}) ستكون موقعة.\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
-      }
-      else {
+      } else {
         const msg = `Messages sent by ${userFullName} (${username}) will be signed.\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
       }
       break;
     case DiagnosticMessage.USER_MESSAGES_WILL_NOT_BE_SIGNED_MESSAGE:
-      if (settings.language() == "ar") {
+      if (settings.language() == 'ar') {
         const msg = `الرسائل المرسلة من قبل ${userFullName} (${username}) لن تكون موقعة.\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
-      }
-      else {
+      } else {
         const msg = `Messages sent by ${userFullName} (${username}) will not be signed.\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
       }
 
       break;
     case DiagnosticMessage.SHOW_REPLIED_TO_MESSAGES_MESSAGE:
-      if (settings.language() == "ar") {
+      if (settings.language() == 'ar') {
         const msg = `سيتمكن المستخدم من رؤية أي رسالة من الرسائل التي أرسلها تم الرد عليها.\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
-      }
-      else {
+      } else {
         const msg = `The user will be able to see which message admins have replied to.\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
       }
 
       break;
     case DiagnosticMessage.HIDE_REPLIED_TO_MESSAGES_MESSAGE:
-      if (settings.language() == "ar") {
+      if (settings.language() == 'ar') {
         const msg = `لن يتمكن المستخدم من رؤية أي رسالة من الرسائل التي أرسلها تم الرد عليها.\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
-      }
-      else {
+      } else {
         const msg = `The user will not be able to see which message admins have replied to.\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
       }
 
       break;
     case DiagnosticMessage.FORWARDING_IS_ON_MESSAGE:
-      if (settings.language() == "ar") {
+      if (settings.language() == 'ar') {
         const msg = `الرسائل التي يرسلها المستخدم سيتم تحوليها بدلًا من إرسالها.\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
-      }
-      else {
+      } else {
         const msg = `User messages sent to the bot will be forwarded instead of being sent.\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
       }
 
       break;
     case DiagnosticMessage.FORWARDING_IS_OFF_MESSAGE:
-      if (settings.language() == "ar") {
+      if (settings.language() == 'ar') {
         const msg = `الرسائل التي يرسلها المستخدم لن يتم تحويلها. بدلًا من ذلك, سيتم إرسالها.\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
-      }
-      else {
+      } else {
         const msg = `User messages sent to the bot will NOT be forwarded. Instead, they will be sent.\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
       }
 
       break;
     case DiagnosticMessage.USER_WELCOMING_MESSAGE:
-      if (settings.language() == "ar") {
+      if (settings.language() == 'ar') {
         const msg = `${TextMessages.USER_WELCOMING_MESSAGE_AR}\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
-      }
-      else {
+      } else {
         const msg = `${TextMessages.USER_WELCOMING_MESSAGE_EN}\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
       }
 
       break;
     case DiagnosticMessage.USER_CHAT_HAS_ALREADY_STARTED:
-      if (settings.language() == "ar") {
+      if (settings.language() == 'ar') {
         const msg = `محادثتك قد بدأت بالفعل. أرسل أي رسالة تريدها و سنحاول أن نرد عليها باسرع وقت.\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
-      }
-      else {
+      } else {
         const msg = `Your chat has already started. Send whatever message you want and we will hopefully respond ASAP.\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
       }
 
@@ -513,27 +500,25 @@ export const sendDiagnosticMessage = async function (messageType, chatId, opts =
         if (settings.forwardMode())
           bot.sendMessage(chatId, msg1, {
             ...options,
-            ...(getEntities(msg1))
+            ...getEntities(msg1),
           });
         else
           bot.sendMessage(chatId, msg2, {
             ...options,
-            ...(getEntities(msg2))
+            ...getEntities(msg2),
           });
-      }
-      else {
+      } else {
         const msg1 = `User messages are being forwarded instead of being sent.\nTo change this setting, use the command /forwarding on|off\n${botSenderMsg}`;
         const msg2 = `User messages are being sent instead of being forwarded.\nTo change this setting, use the command /forwarding on|off\n${botSenderMsg}`;
         if (settings.forwardMode())
           bot.sendMessage(chatId, msg1, {
             ...options,
-            ...(getEntities(msg1))
-          }
-          );
+            ...getEntities(msg1),
+          });
         else
           bot.sendMessage(chatId, msg2, {
             ...options,
-            ...(getEntities(msg2))
+            ...getEntities(msg2),
           });
       }
       break;
@@ -544,27 +529,25 @@ export const sendDiagnosticMessage = async function (messageType, chatId, opts =
         if (settings.replies())
           bot.sendMessage(chatId, msg1, {
             ...options,
-            ...(getEntities(msg1))
+            ...getEntities(msg1),
           });
         else
           bot.sendMessage(chatId, msg2, {
             ...options,
-            ...(getEntities(msg2))
+            ...getEntities(msg2),
           });
-      }
-      else {
+      } else {
         const msg1 = `The user can see which message admins have replied to.\nTo change this setting, use the command /replies on|off\n${botSenderMsg}`;
         const msg2 = `The user cannot see which message admins have replied to.\nTo change this setting, use the command /replies on|off\n${botSenderMsg}`;
         if (settings.replies())
           bot.sendMessage(chatId, msg1, {
             ...options,
-            ...(getEntities(msg1))
-          }
-          );
+            ...getEntities(msg1),
+          });
         else
           bot.sendMessage(chatId, msg2, {
             ...options,
-            ...(getEntities(msg2))
+            ...getEntities(msg2),
           });
       }
       break;
@@ -575,27 +558,25 @@ export const sendDiagnosticMessage = async function (messageType, chatId, opts =
         if (await admins.adminSigns(user))
           bot.sendMessage(chatId, msg1, {
             ...options,
-            ...(getEntities(msg1))
+            ...getEntities(msg1),
           });
         else
           bot.sendMessage(chatId, msg2, {
             ...options,
-            ...(getEntities(msg2))
+            ...getEntities(msg2),
           });
-      }
-      else {
+      } else {
         const msg1 = `The messages of admin ${userFullName} (${username}) are signed.\nTo make them not signed, use the command /sign off\n${botSenderMsg}`;
         const msg2 = `The messages of admin ${userFullName} (${username}) are not signed.\nTo make them signed, use the command /sign on\n${botSenderMsg}`;
         if (await admins.adminSigns(user))
           bot.sendMessage(chatId, msg1, {
             ...options,
-            ...(getEntities(msg1))
-          }
-          );
+            ...getEntities(msg1),
+          });
         else
           bot.sendMessage(chatId, msg2, {
             ...options,
-            ...(getEntities(msg2))
+            ...getEntities(msg2),
           });
       }
       break;
@@ -606,27 +587,25 @@ export const sendDiagnosticMessage = async function (messageType, chatId, opts =
         if (await users.isUserPrivate(user))
           bot.sendMessage(chatId, msg1, {
             ...options,
-            ...(getEntities(msg1))
+            ...getEntities(msg1),
           });
         else
           bot.sendMessage(chatId, msg2, {
             ...options,
-            ...(getEntities(msg2))
+            ...getEntities(msg2),
           });
-      }
-      else {
+      } else {
         const msg1 = `Private mode is on. Your name and information will not appear to admins.\nTo disable this mode, use the command /private off\n${botSenderMsg}`;
         const msg2 = `Private mode is off. Your name and information will appear to admins.\nTo enable this mode, use the command /private on\n${botSenderMsg}`;
         if (await users.isUserPrivate(user))
           bot.sendMessage(chatId, msg1, {
             ...options,
-            ...(getEntities(msg1))
-          }
-          );
+            ...getEntities(msg1),
+          });
         else
           bot.sendMessage(chatId, msg2, {
             ...options,
-            ...(getEntities(msg2))
+            ...getEntities(msg2),
           });
       }
       break;
@@ -637,122 +616,118 @@ export const sendDiagnosticMessage = async function (messageType, chatId, opts =
         if (await users.isUserPrivate(user))
           bot.sendMessage(chatId, msg1, {
             ...options,
-            ...(getEntities(msg1))
+            ...getEntities(msg1),
           });
         else
           bot.sendMessage(chatId, msg2, {
             ...options,
-            ...(getEntities(msg2))
+            ...getEntities(msg2),
           });
-      }
-      else {
+      } else {
         const msg1 = `You are in private mode. Your name and information will not appear to admins.\nTo disable this mode, use the command /private off\n${botSenderMsg}`;
         const msg2 = `You are not in private mode. Your name and information will appear to admins.\nTo enable this mode, use the command /private on\n${botSenderMsg}`;
         if (await users.isUserPrivate(user))
           bot.sendMessage(chatId, msg1, {
             ...options,
-            ...(getEntities(msg1))
-          }
-          );
+            ...getEntities(msg1),
+          });
         else
           bot.sendMessage(chatId, msg2, {
             ...options,
-            ...(getEntities(msg2))
+            ...getEntities(msg2),
           });
       }
       break;
     case DiagnosticMessage.ADMIN_INIT_BOT_MESSAGE:
-      if (settings.language() == "ar") {
-        const msg = `بدأ البوت.\n${botSenderMsg}`;
-        bot.sendMessage(chatId, msg, {
-          ...options,
-          ...(getEntities(msg))
-        });
-      }
-      else {
-        const msg = `Bot has started.\n${botSenderMsg}`;
-        bot.sendMessage(chatId, msg, {
-          ...options,
-          ...(getEntities(msg))
-        });
-      }
-      sendDiagnosticMessage(DiagnosticMessage.ADMIN_COMMANDS_MESSAGE, chatId);
-      break;
+
     case DiagnosticMessage.BOT_IS_ALREADY_INITIALIZED_MESSAGE: {
-      if (settings.language() == "ar") {
+      if (settings.language() == 'ar') {
         const msg = `لقد بدأ البوت بالفعل.\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
-      }
-      else {
+      } else {
         const msg = `Bot has already started.\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
       }
       break;
     }
     case DiagnosticMessage.ADMIN_DELETING_WRONG_MESSAGE: {
-      if (settings.language() == "ar") {
+      if (settings.language() == 'ar') {
         const msg = `الرسالة التي تحاول حذفها هي رسالة مستخدم. لا يستطيع المشرفون مسح رسائل المستخدمين.\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
-      }
-      else {
+      } else {
         const msg = `The message you're trying to delete is a user message. Admins can not delete user messages.\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
       }
       break;
     }
 
     case DiagnosticMessage.USER_DELETING_WRONG_MESSAGE: {
-      if (settings.language() == "ar") {
+      if (settings.language() == 'ar') {
         const msg = `الرسالة التي تحاول حذفها هي رسالة مشرف. لا يستطيع المستخدمون مسح رسائل المشرفين.\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
-      }
-      else {
+      } else {
         const msg = `The message you're trying to delete is an admin message. Users can not delete admin messages.\n${botSenderMsg}`;
         bot.sendMessage(chatId, msg, {
           ...options,
-          ...(getEntities(msg))
+          ...getEntities(msg),
         });
       }
       break;
     }
-
+    case DiagnosticMessage.BOT_WAS_BLOCKED_BY_USER:
+      if (settings.language() == 'ar') {
+        const msg = `لقد قام المستخدم الفلاح بحظر البوت. أحسنلك تديله بلوك بدام هو معندوش دم 🥸.\n${botSenderMsg}`;
+        bot.sendMessage(chatId, msg, {
+          ...options,
+          ...getEntities(msg),
+        });
+      } else {
+        const msg = `Bot was blocked by user with ID.\n${botSenderMsg}`;
+        bot.sendMessage(chatId, msg, {
+          ...options,
+          ...getEntities(msg),
+        });
+      }
+      break;
   }
-
-}
+};
 
 export class Diagnostics {
-
   static settingsMessage() {
     const language = settings.language();
-    const settingsMsg = language == 'ar' ? '⚙️ الإعدادات:' : '⚙️ Settings:'
+    const settingsMsg = language == 'ar' ? '⚙️ الإعدادات:' : '⚙️ Settings:';
     return settingsMsg;
   }
 
   static languageSettingsMessage() {
     const language = settings.language();
-    const msg = language == 'ar' ? '🌍 إعدادات اللغة:' : '🌍 Language Settings:';
+    const msg =
+      language == 'ar' ? '🌍 إعدادات اللغة:' : '🌍 Language Settings:';
 
     return msg;
   }
 
   static manageBannedUsersMessage() {
     const language = settings.language();
-    const msg = language == 'ar' ? '🔐 إدارة المستخدمين المحظورين:' : '🔐 Manage Banned Users:';
+    const msg =
+      language == 'ar'
+        ? '🔐 إدارة المستخدمين المحظورين:'
+        : '🔐 Manage Banned Users:';
 
     return msg;
   }
@@ -775,7 +750,6 @@ export class Diagnostics {
       🔒 Number of banned users: ${bannedUserCount}
       🥸 Number of admins: ${adminCount}
       ✉️ Number of messages sent through the bot: ${messageCount}`;
-
   }
 
   static finishMessage() {
@@ -788,25 +762,48 @@ export class Diagnostics {
   static boolMessage(val) {
     const language = settings.language();
 
-    if (val)
-      return language == 'ar' ? 'يعمل' : 'On';
-    else
-      return language == 'ar' ? 'مُعطَّل' : 'Off';
+    if (val) return language == 'ar' ? 'يعمل' : 'On';
+    else return language == 'ar' ? 'مُعطَّل' : 'Off';
   }
 
   static adminCommands() {
     return [
       { command: 'help', description: 'prints the help message.' },
-      { command: 'settings', description: 'opens the interface for editing bot settings.' },
-      { command: 'log', description: 'logs useful information for developers.' },
-      { command: 'sign', description: 'shows whether admin messages are signed. can also be used to change signing status for an admin.' },
-      { command: 'replies', description: 'shows whether reply are on or off. can also be used to change this setting.' },
-      { command: 'forwarding', description: 'shows whether forwarding mode is on or off. can also be used to change this setting.' },
-      { command: 'bannedusers', description: 'displays a list of all banned users.' },
+      {
+        command: 'settings',
+        description: 'opens the interface for editing bot settings.',
+      },
+      {
+        command: 'log',
+        description: 'logs useful information for developers.',
+      },
+      {
+        command: 'sign',
+        description:
+          'shows whether admin messages are signed. can also be used to change signing status for an admin.',
+      },
+      {
+        command: 'replies',
+        description:
+          'shows whether reply are on or off. can also be used to change this setting.',
+      },
+      {
+        command: 'forwarding',
+        description:
+          'shows whether forwarding mode is on or off. can also be used to change this setting.',
+      },
+      {
+        command: 'bannedusers',
+        description: 'displays a list of all banned users.',
+      },
       { command: 'ban', description: 'bans a user using their user ID.' },
       { command: 'unban', description: 'unbans a user using their user ID.' },
-      { command: 'language', description: 'displays the current language of the bot. can also be used to change the language.' },
-    ]
+      {
+        command: 'language',
+        description:
+          'displays the current language of the bot. can also be used to change the language.',
+      },
+    ];
 
     // if (settings.language() == 'ar') {
     //   return [
@@ -826,9 +823,15 @@ export class Diagnostics {
   static userCommands() {
     return [
       { command: 'help', description: 'prints the help message.' },
-      { command: 'settings', description: 'opens the interface for editing bot settings.' },
-      { command: 'private', description: 'depending on arguments: prints the private mode state of the user or sets the private mode on or off.' }
+      {
+        command: 'settings',
+        description: 'opens the interface for editing bot settings.',
+      },
+      {
+        command: 'private',
+        description:
+          'depending on arguments: prints the private mode state of the user or sets the private mode on or off.',
+      },
     ];
   }
-
 }
