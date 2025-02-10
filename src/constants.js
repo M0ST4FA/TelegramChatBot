@@ -1,51 +1,57 @@
-import { createRequire } from 'module'
+import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 
 const TelegramBot = require('node-telegram-bot-api');
 const { PrismaClient } = require('@prisma/client');
 
 export class BotInfo {
-	static BOT_TOKEN = process.env.BOT_TOKEN;
-	static BOT_NAME = process.env.BOT_NAME;
-	static BOT_USERNAME = process.env.BOT_USERNAME;
-	static ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID; // Replace with the chat ID you want to forward messages to
-	static PORT = process.env.PORT;
-	static WEBHOOK_URL = process.env.WEBHOOK_URL;
+  static BOT_TOKEN = process.env.BOT_TOKEN;
+  static BOT_NAME = process.env.BOT_NAME;
+  static BOT_USERNAME = process.env.BOT_USERNAME;
+  static ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID; // Replace with the chat ID you want to forward messages to
+  static PORT = process.env.PORT;
+  static WEBHOOK_URL = process.env.WEBHOOK_URL;
 
-	static #stringToBool(str) {
-		if (str.toLowerCase() == 'false')
-			return false;
-		else
-			return true;
-	}
-	static POLL = process.env.POLL ? BotInfo.#stringToBool(process.env.POLL) : false;
+  static #stringToBool(str) {
+    if (str.toLowerCase() == 'false') return false;
+    else return true;
+  }
+  static POLL = process.env.POLL
+    ? BotInfo.#stringToBool(process.env.POLL)
+    : false;
 }
 
 export const bot = new TelegramBot(BotInfo.BOT_TOKEN, {
-	polling: BotInfo.POLL,
-	webHook: BotInfo.POLL ? undefined : {
-		port: BotInfo.PORT
-	}
+  polling: BotInfo.POLL,
+  webHook: BotInfo.POLL
+    ? undefined
+    : {
+        port: BotInfo.PORT,
+      },
 });
 
 // Enable both a polling and a webhook mode
 if (!BotInfo.POLL) {
-	await bot.setWebHook(`${BotInfo.WEBHOOK_URL}/webhook/${BotInfo.BOT_TOKEN}`);
-	bot.getWebHookInfo().then(webhookInfo => {
-		console.log(`Webhook info:\nURL: ${webhookInfo.url}\nAllowed updates: ${webhookInfo.allowed_updates ? webhookInfo.allowed_updates : 'All update types'}\nPending update count: ${webhookInfo.pending_update_count}`);
-	});
-	console.log('Using webhooks.');
+  await bot.setWebHook(`${BotInfo.WEBHOOK_URL}/webhook/${BotInfo.BOT_TOKEN}`);
+  bot.getWebHookInfo().then(webhookInfo => {
+    console.log(
+      `Webhook info:\nURL: ${webhookInfo.url}\nAllowed updates: ${
+        webhookInfo.allowed_updates
+          ? webhookInfo.allowed_updates
+          : 'All update types'
+      }\nPending update count: ${webhookInfo.pending_update_count}`,
+    );
+  });
+  console.log('Using webhooks.');
 } else {
-	console.log('Using polling mode.');
+  console.log('Using polling mode.');
 }
 
 export const prisma = new PrismaClient();
 
 export class TextMessages {
-
-	// ADMIN COMMANDS
-	static ADMIN_COMMANDS_MESSAGE_EN =
-		`✳️ Commands supported by the bot:
+  // ADMIN COMMANDS
+  static ADMIN_COMMANDS_MESSAGE_EN = `✳️ Commands supported by the bot:
 	🤖 /help
 	Shows this message.
 	🤖 /settings
@@ -71,10 +77,9 @@ export class TextMessages {
 	Removes the user with the ID <user ID> from the list of banned users.
 	🤖 /language ar|en
 	⚙️ Prints the language of the bot.
-	📌 Sets the language of the bot to Arabic (ar) or English (en).`
+	📌 Sets the language of the bot to Arabic (ar) or English (en).`;
 
-	static ADMIN_COMMANDS_MESSAGE_AR =
-		`✳️ الأوامر المدعومة من البوت:
+  static ADMIN_COMMANDS_MESSAGE_AR = `✳️ الأوامر المدعومة من البوت:
 	🤖 /help
 	عرض هذه الرسالة.
 	🤖 /settings
@@ -102,35 +107,29 @@ export class TextMessages {
 	⚙️ عرض لغة البوت.
 	تحويل لغة البوت إلي العربية (ar) أو الإنجليزية (en)📌.`;
 
-	// USER COMMANDS
-	static USER_COMMANDS_MESSAGE_EN =
-		`✳️ Commands supported by the bot:
+  // USER COMMANDS
+  static USER_COMMANDS_MESSAGE_EN = `✳️ Commands supported by the bot:
 	🤖 /commands
 	Shows this message.
 	🤖 /private on|off
 	⚙️ Shows whether the user is in private mode or not.
-	📌 Toggles private mode. In private mode, your name and information is not available to the admins of the bot.`
+	📌 Toggles private mode. In private mode, your name and information is not available to the admins of the bot.`;
 
-	static USER_COMMANDS_MESSAGE_AR =
-		`✳️ الأوامر المدعومة من البوت:
+  static USER_COMMANDS_MESSAGE_AR = `✳️ الأوامر المدعومة من البوت:
 	🤖 /commands
 	عرض هذه الرسالة.
 	🤖 /private on|off
 	⚙️ عرض ما إذا كان المستخدم في الوضع الخاص أم لا.
 	📌 تشغيل أو إيقاف الوضع الخاص. في هذا الوضع, اسمك و معلومات حسابك لا تظهر للمشرفين.`;
 
-	// WELCOMING MESSAGE
-	static USER_WELCOMING_MESSAGE_EN =
-		`✳️ Welcome to ${BotInfo.BOT_NAME}!
+  // WELCOMING MESSAGE
+  static USER_WELCOMING_MESSAGE_EN = `✳️ Welcome to ${BotInfo.BOT_NAME}!
 ✳️ You can send us any message you want and hopefully we will respond ASAP. 
 ✳️ Please be patient, and most importantly, be polite.
-${TextMessages.USER_COMMANDS_MESSAGE_EN}`
+${TextMessages.USER_COMMANDS_MESSAGE_EN}`;
 
-	static USER_WELCOMING_MESSAGE_AR =
-		`✳️ مرحبا بك في ${BotInfo.BOT_NAME}!
+  static USER_WELCOMING_MESSAGE_AR = `✳️ مرحبا بك في ${BotInfo.BOT_NAME}!
 ✳️ بإمكانك إرسال أية رسالة تريدها و سنحاول الرد عليك بأسرع ما يمكن. 
 ✳️ من فضلك كن صبورًا, و الأهم, كن محترمًا.
 ${TextMessages.USER_COMMANDS_MESSAGE_AR}`;
-
-
 }
