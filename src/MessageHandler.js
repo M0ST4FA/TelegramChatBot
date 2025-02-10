@@ -488,6 +488,8 @@ export default class MessageHandler {
         : [],
     };
 
+    if (msg.entities) options.entities = [...options.entities, ...msg.entities];
+
     bot.editMessageText(text, options);
     sendDiagnosticMessage(
       DiagnosticMessage.EDITED_MESSAGE_TEXT,
@@ -532,6 +534,8 @@ export default class MessageHandler {
         : [],
     };
 
+    if (msg.entities) options.entities = [...options.entities, ...msg.entities];
+
     bot.editMessageText(text, options);
     sendDiagnosticMessage(DiagnosticMessage.EDITED_MESSAGE_TEXT, userChatId, {
       reply_to_message_id: userMsgId,
@@ -572,6 +576,12 @@ export default class MessageHandler {
         : [],
     };
 
+    if (msg.caption_entities)
+      options.caption_entities = [
+        ...options.caption_entities,
+        ...msg.caption_entities,
+      ];
+
     bot.editMessageCaption(text, options);
     sendDiagnosticMessage(
       DiagnosticMessage.EDITED_MESSAGE_CAPTION,
@@ -585,7 +595,7 @@ export default class MessageHandler {
     const userChatMsgId = msg.message_id;
     const userChatId = msg.chat.id;
     const resArray = await Promise.allSettled([
-      UserInfo.getResponderMessage(msg, false),
+      UserInfo.getSenderMessage(msg, false),
       messages.getUserMessageU(userChatMsgId),
     ]);
 
@@ -615,6 +625,12 @@ export default class MessageHandler {
           ]
         : [],
     };
+
+    if (msg.caption_entities)
+      options.caption_entities = [
+        ...options.caption_entities,
+        ...msg.caption_entities,
+      ];
 
     bot.editMessageCaption(text, options);
     sendDiagnosticMessage(
