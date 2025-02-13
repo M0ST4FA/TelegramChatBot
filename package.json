@@ -6,11 +6,8 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon ./src/bot.js",
-    "start-test": "nodemon --env-file=test.env ./src/bot.js",
-    "start-tachy": "nodemon --env-file=tachy.env ./src/bot.js",
-    "start-ws": "nodemon --env-file=ws.env ./src/bot.js",
-    "start-tsupport": "nodemon --env-file=tsupport.env ./src/bot.js",
+    "start": "nodemon --env-file=test.env ./src/bot.js",
+    "debug": "ndb --env-file=test.env ./src/bot.js",
     "install": "",
     "build": ""
   },

@@ -14,7 +14,6 @@ export default class MessageHandler {
   static #MESSAGE_DELAY = 1000 / 20;
 
   // Helper methods
-
   static #enqueueMessage(sendToChatId, msg, options) {
     return new Promise((resolve, reject) => {
       MessageHandler.#messageQueue.enqueue({
@@ -276,13 +275,27 @@ export default class MessageHandler {
           caption_entities: options.caption_entities,
         })
         .then(null, () => {
-          setTimeout(() => {
-            bot.deleteMessage(sendToChatId, oppositeChatMsgId);
+          setTimeout(async () => {
+            const forwarded = currentChatId !== BotInfo.ADMIN_CHAT_ID;
+            const userMessageId = forwarded
+              ? currentChatMsgId
+              : oppositeChatMsgId;
+            const userChatId = forwarded ? currentChatId : sendToChatId;
+            const adminMessageId = forwarded
+              ? oppositeChatMsgId
+              : currentChatMsgId;
+
+            await messages.deleteMessage({
+              userChatId,
+              forwarded,
+              userMessageId,
+              adminMessageId,
+            });
             MessageHandler.#enqueueMessage(sendToChatId, msg, {
               ...options,
-              reply_to_message_id: oppositeChatMsgId,
+              // reply_to_message_id: oppositeChatMsgId,
             });
-          }, 1000 * 50);
+          }, 1000 * 5);
         });
     }
 
