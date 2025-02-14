@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon --env-file=test.env ./src/bot.js",
+    "start": "node --env-file=test.env ./src/bot.js",
+    "start-nodemon": "nodemon --env-file=test.env ./src/bot.js",
     "debug": "ndb --env-file=test.env ./src/bot.js",
     "install": "",
     "build": ""
