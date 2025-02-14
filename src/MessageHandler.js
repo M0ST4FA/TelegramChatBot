@@ -267,43 +267,42 @@ export default class MessageHandler {
 
       options.caption_entities = entities;
 
-      if (entities.length)
-        bot
-          .editMessageCaption(options.text, {
-            chat_id: sendToChatId,
-            message_id: oppositeChatMsgId,
-            caption: options.caption,
-            caption_entities: options.caption_entities,
-          })
-          .catch(error => {
-            if (error.response.body.parameters.error_code != 429)
-              setTimeout(() => {
-                console.log(err);
-                const forwarded = currentChatId !== BotInfo.ADMIN_CHAT_ID;
-                const userMessageId = forwarded
-                  ? currentChatMsgId
-                  : oppositeChatMsgId;
-                const userChatId = forwarded ? currentChatId : sendToChatId;
-                const adminMessageId = forwarded
-                  ? oppositeChatMsgId
-                  : currentChatMsgId;
+      bot
+        .editMessageCaption(options.text, {
+          chat_id: sendToChatId,
+          message_id: oppositeChatMsgId,
+          caption: options.caption,
+          caption_entities: options.caption_entities,
+        })
+        .catch(error => {
+          if (error.response.body.parameters.error_code != 429)
+            setTimeout(() => {
+              console.log(error.response.body);
+              const forwarded = currentChatId !== BotInfo.ADMIN_CHAT_ID;
+              const userMessageId = forwarded
+                ? currentChatMsgId
+                : oppositeChatMsgId;
+              const userChatId = forwarded ? currentChatId : sendToChatId;
+              const adminMessageId = forwarded
+                ? oppositeChatMsgId
+                : currentChatMsgId;
 
-                const message = {
-                  userChatId,
-                  forwarded,
-                  userMessageId,
-                  adminMessageId,
-                };
+              const message = {
+                userChatId,
+                forwarded,
+                userMessageId,
+                adminMessageId,
+              };
 
-                console.log('Resending message: ', message);
-                messages.deleteMessage(message).then(message =>
-                  MessageHandler.#enqueueMessage(sendToChatId, msg, {
-                    ...options,
-                    reply_to_message_id: oppositeChatMsgId,
-                  }),
-                );
-              }, 1000 * 5);
-          });
+              console.log('Resending message: ', message);
+              messages.deleteMessage(message).then(message => {
+                MessageHandler.#enqueueMessage(sendToChatId, msg, {
+                  ...options,
+                  // reply_to_message_id: oppositeChatMsgId || undefined,
+                });
+              });
+            }, 2000 * error.response.body.retry_after);
+        });
     }
 
     if (msg.sticker || msg.poll)
