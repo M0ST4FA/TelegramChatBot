@@ -731,11 +731,11 @@ export default class CommandHandler {
         ⛔ Status: ${isUserBanned ? 'Banned' : 'Not banned'}${botSenderMsg}
         `.trim();
 
-        const entities = getEntities(msg);
+        const entities = getEntities(userInfo);
 
         bot.sendMessage(BotInfo.ADMIN_CHAT_ID, userInfo, {
           reply_to_message_id: msg.message_id,
-          ...getEntities(userInfo),
+          ...entities.entities,
         });
         return true;
       }
