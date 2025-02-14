@@ -754,6 +754,7 @@ export default class CommandHandler {
           `.trim();
 
       const entities = getEntities(userInfo);
+      console.log(entities);
 
       if (photos.total_count == 0) {
         const options = {

@@ -267,36 +267,41 @@ export default class MessageHandler {
 
       options.caption_entities = entities;
 
-      bot
-        .editMessageCaption(options.text, {
-          chat_id: sendToChatId,
-          message_id: oppositeChatMsgId,
-          caption: options.caption,
-          caption_entities: options.caption_entities,
-        })
-        .then(null, () => {
-          setTimeout(async () => {
-            const forwarded = currentChatId !== BotInfo.ADMIN_CHAT_ID;
-            const userMessageId = forwarded
-              ? currentChatMsgId
-              : oppositeChatMsgId;
-            const userChatId = forwarded ? currentChatId : sendToChatId;
-            const adminMessageId = forwarded
-              ? oppositeChatMsgId
-              : currentChatMsgId;
+      if (entities.length)
+        bot
+          .editMessageCaption(options.text, {
+            chat_id: sendToChatId,
+            message_id: oppositeChatMsgId,
+            caption: options.caption,
+            caption_entities: options.caption_entities,
+          })
+          .catch(() => {
+            setTimeout(() => {
+              const forwarded = currentChatId !== BotInfo.ADMIN_CHAT_ID;
+              const userMessageId = forwarded
+                ? currentChatMsgId
+                : oppositeChatMsgId;
+              const userChatId = forwarded ? currentChatId : sendToChatId;
+              const adminMessageId = forwarded
+                ? oppositeChatMsgId
+                : currentChatMsgId;
 
-            await messages.deleteMessage({
-              userChatId,
-              forwarded,
-              userMessageId,
-              adminMessageId,
-            });
-            MessageHandler.#enqueueMessage(sendToChatId, msg, {
-              ...options,
-              // reply_to_message_id: oppositeChatMsgId,
-            });
-          }, 1000 * 5);
-        });
+              const message = {
+                userChatId,
+                forwarded,
+                userMessageId,
+                adminMessageId,
+              };
+
+              console.log('Resending message: ', message);
+              messages.deleteMessage(message).then(message =>
+                MessageHandler.#enqueueMessage(sendToChatId, msg, {
+                  ...options,
+                  reply_to_message_id: oppositeChatMsgId,
+                }),
+              );
+            }, 1000 * 5);
+          });
     }
 
     if (msg.sticker || msg.poll)
