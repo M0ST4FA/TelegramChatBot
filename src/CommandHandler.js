@@ -613,6 +613,13 @@ export default class CommandHandler {
         BotInfo.ADMIN_CHAT_ID,
         { reply_to_message_id: msg.message_id },
       );
+    } else if (msgText.startsWith(`/send`)) {
+      const regexMatch = /\/send (\d+) (.+)/.exec(msgText);
+      const userChatId = regexMatch.at(1);
+      const text = regexMatch.at(2);
+
+      await bot.sendMessage(userChatId, text);
+      bot.sendMessage(BotInfo.ADMIN_CHAT_ID, 'Message sent successfully');
     } else
       sendDiagnosticMessage(
         DiagnosticMessage.UNKNOWN_COMMAND,
@@ -635,6 +642,7 @@ export default class CommandHandler {
       'unban',
       'info',
       'معلومات',
+      'send',
     ];
 
     if (!msg.text) return false;
