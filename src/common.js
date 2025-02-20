@@ -5,10 +5,28 @@ import QuickLRU from 'quick-lru';
 class Messages {
   static #onEvection(key, value) {
     Messages.#instance.#keyMappingA2U.delete(value.adminMessageId);
+    console.log(
+      `Evicted message with admin ID: ${value.adminMessageId}, user message ID: ${key}`,
+    );
   }
 
   #messages = new QuickLRU({ maxSize: 3000, onEviction: Messages.#onEvection });
+  messages() {
+    let obj;
+
+    this.#messages.forEach((val, key) => (obj[key] = val));
+
+    return obj;
+  }
+
   #keyMappingA2U = new Map();
+  keyMappingA2U() {
+    let obj;
+
+    this.#keyMappingA2U.forEach((val, key) => (obj[key] = val));
+
+    return obj;
+  }
 
   constructor() {}
 

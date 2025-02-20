@@ -33,7 +33,13 @@ bot.on('message', async msg => {
       if (await MessageHandler.sendAdminMessage(msg)) return;
     }
   } catch (err) {
-    console.log(err);
+    console.log(
+      `Message: ${err.message}\nResponse Body: ${err.response?.body}\nStack: ${
+        err.stack
+      }\nMessage Cache: ${messages.messages()}\nKey Mapping A2U: ${messages.keyMappingA2U()}\nResponse: ${
+        err.response
+      }`,
+    );
 
     const parsedBody = err.response?.body;
 
@@ -43,7 +49,6 @@ bot.on('message', async msg => {
         BotInfo.ADMIN_CHAT_ID,
         { reply_to_message_id: msg.message_id },
       );
-    else bot.sendMessage(BotInfo.ADMIN_CHAT_ID, `Exception: ${err.message}`);
   }
 });
 
