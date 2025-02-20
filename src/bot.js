@@ -36,9 +36,11 @@ bot.on('message', async msg => {
     console.log(
       `Message: ${err.message}\nResponse Body: ${err.response?.body}\nStack: ${
         err.stack
-      }\nMessage Cache: ${messages.messages()}\nKey Mapping A2U: ${messages.keyMappingA2U()}\nResponse: ${
-        err.response
-      }`,
+      }\nMessage Cache: ${JSON.stringify(
+        messages.messages(),
+      )}\nKey Mapping A2U: ${JSON.stringify(
+        messages.keyMappingA2U(),
+      )}\nResponse: ${err.response}`,
     );
 
     const parsedBody = err.response?.body;

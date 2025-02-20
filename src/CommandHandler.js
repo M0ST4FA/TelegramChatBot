@@ -353,7 +353,65 @@ export default class CommandHandler {
         BotInfo.ADMIN_CHAT_ID,
         { reply_to_message_id: msg.message_id },
       );
-    else if (msgText == `/log@${BotInfo.BOT_USERNAME}`) {
+    else if (msgText.startsWith(`/debug`)) {
+      // Syntax: /debug command options/arguments
+      const splitMsgText = msgText.split(' ');
+
+      const command = splitMsgText[1];
+
+      if (command === 'exec') {
+        const valToString = function (value) {
+          try {
+            // Handle undefined and null explicitly
+            if (value === undefined) return 'undefined';
+            if (value === null) return 'null';
+
+            // Handle Symbols
+            if (typeof value === 'symbol') return value.toString();
+
+            // Handle functions (include source code)
+            if (typeof value === 'function') return value.toString();
+
+            // Handle objects (JSON.stringify but with circular reference protection)
+            if (typeof value === 'object') {
+              try {
+                return JSON.stringify(
+                  value,
+                  (key, val) =>
+                    typeof val === 'bigint' ? val.toString() + 'n' : val,
+                  '\t',
+                );
+              } catch (error) {
+                return '[Circular Object]';
+              }
+            }
+
+            // Convert everything else to string
+            return String(value);
+          } catch (error) {
+            return `Error: ${error.message}`;
+          }
+        };
+        const sendMessage = function (msg) {
+          bot.sendMessage(BotInfo.ADMIN_CHAT_ID, msg, {
+            reply_to_message_id: msg.message_id,
+          });
+        };
+
+        splitMsgText.splice(0, 2);
+        const extCode = splitMsgText.join(' ');
+        const code = `(function fn() {\n${extCode}\n})()`;
+
+        try {
+          const evalValue = valToString(eval(code));
+
+          sendMessage(evalValue);
+        } catch (error) {
+          sendMessage(error.message);
+        }
+        return true;
+      }
+
       bot.sendMessage(BotInfo.ADMIN_CHAT_ID, `Reimplement this command.`);
       return true;
     } else if (msgText == `/start@${BotInfo.BOT_USERNAME}`)

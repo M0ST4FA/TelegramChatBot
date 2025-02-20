@@ -12,18 +12,18 @@ class Messages {
 
   #messages = new QuickLRU({ maxSize: 3000, onEviction: Messages.#onEvection });
   messages() {
-    let obj;
+    let obj = {};
 
-    this.#messages.forEach((val, key) => (obj[key] = val));
+    this.#messages.forEach((val, key) => (obj[key] = Number(val)));
 
     return obj;
   }
 
   #keyMappingA2U = new Map();
   keyMappingA2U() {
-    let obj;
+    let obj = {};
 
-    this.#keyMappingA2U.forEach((val, key) => (obj[key] = val));
+    this.#keyMappingA2U.forEach((val, key) => (obj[key] = Number(val)));
 
     return obj;
   }
