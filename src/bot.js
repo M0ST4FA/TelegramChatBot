@@ -46,7 +46,7 @@ bot.on('message', async msg => {
     const parsedBody = err.response?.body;
 
     if (parsedBody?.error_code === 403)
-      sendDiagnosticMessage(
+      return sendDiagnosticMessage(
         DiagnosticMessage.BOT_WAS_BLOCKED_BY_USER,
         BotInfo.ADMIN_CHAT_ID,
         { reply_to_message_id: msg.message_id },
@@ -260,7 +260,9 @@ bot.on('callback_query', async callbackQuery => {
 });
 
 bot.on('webhook_error', async error => {
-  console.log(error.cause);
+  console.log(
+    `Webhook Error:\nName:${error.name}\nMessage:${error.message}\nStack:${error.stack}`,
+  );
 });
 
 bot.on('edited_message_text', async msg => {

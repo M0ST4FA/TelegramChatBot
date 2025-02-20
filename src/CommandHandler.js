@@ -392,8 +392,8 @@ export default class CommandHandler {
             return `Error: ${error.message}`;
           }
         };
-        const sendMessage = function (msg) {
-          bot.sendMessage(BotInfo.ADMIN_CHAT_ID, msg, {
+        const sendMessage = function (message) {
+          bot.sendMessage(BotInfo.ADMIN_CHAT_ID, valToString(message), {
             reply_to_message_id: msg.message_id,
           });
         };

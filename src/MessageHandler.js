@@ -54,7 +54,9 @@ export default class MessageHandler {
           // Wait before resuming message sending
           await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
         } else {
-          console.error('Error sending message:', error);
+          console.error(
+            `Error sending message:\nMessage: ${error.message}\nStack: ${error.stack}`,
+          );
           reject(error);
         }
       }

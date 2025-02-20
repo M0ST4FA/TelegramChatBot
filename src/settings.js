@@ -1,5 +1,5 @@
-import { prisma } from './constants.js'
-import QuickLRU from 'quick-lru'
+import { prisma } from './constants.js';
+import QuickLRU from 'quick-lru';
 
 class Settings {
   #replies;
@@ -31,118 +31,121 @@ class Settings {
   static #repliesAreShownDB = async function () {
     const obj = await prisma.setting.findUnique({
       where: {
-        key: "replies"
-      }
-    })
+        key: 'replies',
+      },
+    });
 
-    return obj.value == "true" ? true : false;
-  }
+    return obj.value == 'true' ? true : false;
+  };
 
   static #showRepliesDB = async function () {
     await prisma.setting.update({
       where: {
-        key: "replies"
+        key: 'replies',
       },
       data: {
-        value: "true"
-      }
-    })
-  }
+        value: 'true',
+      },
+    });
+  };
 
   static #hideRepliesDB = async function () {
     await prisma.setting.update({
       where: {
-        key: "replies"
+        key: 'replies',
       },
       data: {
-        value: "false"
-      }
-    })
-  }
+        value: 'false',
+      },
+    });
+  };
 
   // FORWARDING
   static #forwardModeDB = async function () {
     const obj = await prisma.setting.findUnique({
       where: {
-        key: "forwardMode"
-      }
-    })
+        key: 'forwardMode',
+      },
+    });
 
-    return obj.value == "true" ? true : false;
-  }
+    return obj.value == 'true' ? true : false;
+  };
 
   static #enableForwardModeDB = async function () {
     await prisma.setting.update({
       where: {
-        key: "forwardMode"
+        key: 'forwardMode',
       },
       data: {
-        value: "true"
-      }
-    })
-  }
+        value: 'true',
+      },
+    });
+  };
 
   static #disableForwardModeDB = async function () {
     await prisma.setting.update({
       where: {
-        key: "forwardMode"
+        key: 'forwardMode',
       },
       data: {
-        value: "false"
-      }
-    })
-  }
+        value: 'false',
+      },
+    });
+  };
 
   // LANGUAGE
   static #setArabicLanguageDB = async function () {
     await prisma.setting.update({
       where: {
-        key: "language"
+        key: 'language',
       },
       data: {
-        value: "ar"
-      }
-    })
-  }
+        value: 'ar',
+      },
+    });
+  };
 
   static #setEnglishLanguageDB = async function () {
     await prisma.setting.update({
       where: {
-        key: "language"
+        key: 'language',
       },
       data: {
-        value: "en"
-      }
-    })
-  }
+        value: 'en',
+      },
+    });
+  };
 
   static #languageDB = async function () {
     const obj = await prisma.setting.findUnique({
       where: {
-        key: "language"
-      }
-    })
+        key: 'language',
+      },
+    });
 
     return obj.value;
-  }
+  };
 
   // INITIALIZED
   static #initializedDB = async function () {
     const obj = await prisma.setting.findUnique({
       where: {
-        key: "initialized"
-      }
-    })
+        key: 'initialized',
+      },
+    });
 
     return obj.value;
-  }
+  };
 
   static async init() {
+    if (Settings.#instance.#initialized) return;
 
-    if (Settings.#instance.#initialized)
-      return;
-
-    const settingsPromiseArr = await Promise.allSettled([Settings.#repliesAreShownDB(), Settings.#forwardModeDB(), Settings.#languageDB(), Settings.#initializedDB()]);
+    const settingsPromiseArr = await Promise.allSettled([
+      Settings.#repliesAreShownDB(),
+      Settings.#forwardModeDB(),
+      Settings.#languageDB(),
+      Settings.#initializedDB(),
+    ]);
 
     Settings.#instance.#replies = settingsPromiseArr[0].value;
     Settings.#instance.#forwardMode = settingsPromiseArr[1].value;
@@ -152,15 +155,14 @@ class Settings {
     if (Settings.#instance.#initialized == false) {
       await prisma.setting.update({
         where: {
-          key: "initialized"
+          key: 'initialized',
         },
         data: {
-          value: true
-        }
-      })
+          value: true,
+        },
+      });
       settings.#initialized = true;
     }
-
   }
 
   replies() {
@@ -196,11 +198,11 @@ class Settings {
   }
 
   async setLanguage(lang) {
-    if (lang == "ar") {
-      this.#language = "ar";
+    if (lang == 'ar') {
+      this.#language = 'ar';
       await Settings.#setArabicLanguageDB();
     } else {
-      this.#language = "en";
+      this.#language = 'en';
       await Settings.#setEnglishLanguageDB();
     }
   }
@@ -214,33 +216,33 @@ class Settings {
   static async instance() {
     await Settings.init();
     return Settings.#instance;
-  };
-
+  }
 }
 
 // USER ----------------------------------
 
 class Users {
-
   #users = new QuickLRU({ maxSize: 500 });
   #bannedUserIds = new Set();
-  constructor() {
-  }
+  constructor() {}
 
   static #getBannedChatIdsDB = async function () {
     const chats = await prisma.user.findMany({
       where: {
-        banned: true
+        banned: true,
       },
       select: {
-        userId: true
-      }
-    })
+        userId: true,
+      },
+    });
 
     return new Set(chats.map(chat => chat.userId));
-  }
+  };
 
-  static #addUserDB = async function (user, { banned = false, privateMode = false }) {
+  static #addUserDB = async function (
+    user,
+    { banned = false, privateMode = false },
+  ) {
     const sUserId = BigInt(user.id);
 
     console.log(user);
@@ -249,33 +251,32 @@ class Users {
       data: {
         userId: sUserId,
         banned,
-        private: privateMode
-      }
+        private: privateMode,
+      },
     });
-  }
+  };
 
   static #deleteUserDB = async function (user) {
     const sUserId = BigInt(user.id);
 
     return await prisma.user.delete({
       where: {
-        userId: sUserId
-      }
+        userId: sUserId,
+      },
     });
-  }
+  };
 
   static #getUserDB = async function (userId) {
-
-    const sUserId = BigInt(userId)
+    const sUserId = BigInt(userId);
 
     const user = await prisma.user.findUnique({
       where: {
-        userId: sUserId
-      }
+        userId: sUserId,
+      },
     });
 
     return user ? user : null;
-  }
+  };
 
   static async init() {
     Users.#instance.#bannedUserIds = await Users.#getBannedChatIdsDB();
@@ -286,30 +287,29 @@ class Users {
 
     let user = this.#users.get(biUserId);
 
-    if (user)
-      return user;
+    if (user) return user;
 
     user = await Users.#getUserDB(biUserId);
 
-    if (user)
-      this.#users.set(user.userId, user);
+    if (user) this.#users.set(user.userId, user);
 
     return user;
   }
 
   async setUser(user, { banned, privateMode }) {
-
     const userId = BigInt(user.id);
 
     // If both are not specified
-    if (banned == undefined && privateMode == undefined)
-      return null;
+    if (banned == undefined && privateMode == undefined) return null;
 
     let userObj = await this.getUser(userId);
 
     if (!userObj)
       // The ternary operator handles the case where banned and private are undefined
-      return await this.addUser({ userId }, { banned: banned ? true : false, private: privateMode ? true : false });
+      return await this.addUser(
+        { userId },
+        { banned: banned ? true : false, private: privateMode ? true : false },
+      );
 
     let bannedChanged = false;
     let privateChanged = false;
@@ -326,31 +326,32 @@ class Users {
         privateChanged = true;
       }
 
-    if (!(bannedChanged || privateChanged))
-      return userObj;
+    if (!(bannedChanged || privateChanged)) return userObj;
 
-    prisma.user.update({
-      where: {
-        userId
-      },
-      data: {
-        banned,
-        private: privateMode
-      }
-    }).then(u => {
-      console.log('Updated user in database.', user);
-    })
+    prisma.user
+      .update({
+        where: {
+          userId,
+        },
+        data: {
+          banned,
+          private: privateMode,
+        },
+      })
+      .then(u => {
+        console.log('Updated user in database.', user);
+      });
 
     return userObj;
-  };
+  }
 
   // Adds the user immediately and then sends a request to the database
   async addUser(user, { banned = false, privateMode = false }) {
     const userObj = {
       userId: user.id,
       banned: banned ? banned : false,
-      private: privateMode ? privateMode : false
-    }
+      private: privateMode ? privateMode : false,
+    };
     this.#users.set(userObj.userId, userObj);
 
     Users.#addUserDB(user, { banned, private: privateMode }).then(u => {
@@ -383,8 +384,7 @@ class Users {
       console.log('User was not found. Added a new user (in a banned state).');
     }
 
-    if (userObj.banned)
-      return true;
+    if (userObj.banned) return true;
 
     await this.setUser(user, { banned: true });
     this.#bannedUserIds.add(userId);
@@ -399,11 +399,12 @@ class Users {
     if (!userObj) {
       userObj = await this.addUser(user, { banned: false });
       this.#bannedUserIds.delete(userId);
-      console.log('User was not found. Added a new user (in a non-banned state).');
+      console.log(
+        'User was not found. Added a new user (in a non-banned state).',
+      );
     }
 
-    if (!userObj.banned)
-      return true;
+    if (!userObj.banned) return true;
 
     await this.setUser(user, { banned: false });
     this.#bannedUserIds.delete(userId);
@@ -428,8 +429,7 @@ class Users {
       console.log('User was not found. Added a new user (in a private state).');
     }
 
-    if (userObj.private)
-      return true;
+    if (userObj.private) return true;
 
     await this.setUser(user, { privateMode: true });
     return true;
@@ -442,11 +442,12 @@ class Users {
 
     if (!userObj) {
       userObj = await this.addUser(user, { privateMode: false });
-      console.log('User was not found. Added a new user (in a non-private state).');
+      console.log(
+        'User was not found. Added a new user (in a non-private state).',
+      );
     }
 
-    if (!userObj.private)
-      return true;
+    if (!userObj.private) return true;
 
     await this.setUser(user, { privateMode: false });
     return true;
@@ -457,7 +458,6 @@ class Users {
     const userObj = await this.getUser(user.id);
 
     const id = userObj?.activeChannelId;
-
   }
 
   static #instance = new Users();
@@ -466,16 +466,13 @@ class Users {
     await Users.init();
     return this.#instance;
   }
-
 }
 
 // ADMIN ---------------------------------
 
 class Admins {
-
   #admins = new QuickLRU({ maxSize: 30 });
-  constructor() {
-  }
+  constructor() {}
 
   static #addAdminDB = async function (admin) {
     const sUserId = BigInt(admin.id);
@@ -485,46 +482,42 @@ class Admins {
     return await prisma.admin.create({
       data: {
         userId: sUserId,
-        signs: true
-      }
+        signs: true,
+      },
     });
-  }
+  };
 
   static #getAdminDB = async function (userId) {
-    const sUserId = BigInt(userId)
+    const sUserId = BigInt(userId);
 
     const user = await prisma.admin.findUnique({
       where: {
-        userId: sUserId
-      }
+        userId: sUserId,
+      },
     });
 
     return user ? user : null;
-  }
+  };
 
   async getAdmin(userId) {
     const biUserId = BigInt(userId);
 
     const user = this.#admins.get(biUserId);
 
-    if (user)
-      return user;
+    if (user) return user;
 
     const userObj = await Admins.#getAdminDB(biUserId);
 
-    if (userObj)
-      this.#admins.set(userObj.userId, userObj);
+    if (userObj) this.#admins.set(userObj.userId, userObj);
 
     return userObj; // Even if it is null
   }
 
   async setAdmin(user, { signs }) {
-
     const userId = BigInt(user.id);
 
     // If signing is not specified
-    if (signs == undefined)
-      return null;
+    if (signs == undefined) return null;
 
     let userObj = await this.getAdmin(userId);
 
@@ -540,20 +533,19 @@ class Admins {
         signsChanged = true;
       }
 
-    if (!signsChanged)
-      return userObj;
+    if (!signsChanged) return userObj;
 
     await prisma.admin.update({
       where: {
-        userId
+        userId,
       },
       data: {
-        signs
-      }
-    })
+        signs,
+      },
+    });
 
     return userObj;
-  };
+  }
 
   async addAdmin(user, { signs }) {
     const userObj = await Admins.#addAdminDB(user, { signs });
@@ -577,11 +569,10 @@ class Admins {
 
     if (!userObj) {
       userObj = await this.addAdmin(user, { signs: true });
-      console.log("Admin was just added after calling /sign on.");
+      console.log('Admin was just added after calling /sign on.');
     }
 
-    if (userObj.signs)
-      return true;
+    if (userObj.signs) return true;
 
     await this.setAdmin(user, { signs: true });
     return true;
@@ -594,11 +585,10 @@ class Admins {
 
     if (!userObj) {
       userObj = await this.addAdmin(user, { signs: false });
-      console.log("Admin was just added after calling /sign off.");
+      console.log('Admin was just added after calling /sign off.');
     }
 
-    if (!userObj.signs)
-      return true;
+    if (!userObj.signs) return true;
 
     await this.setAdmin(user, { signs: false });
     return true;
