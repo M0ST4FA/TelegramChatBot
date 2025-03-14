@@ -17,7 +17,7 @@ export class BotInfo {
     else return true;
   }
   static POLL =
-    process.env.POLL || !process.env.VERCEL
+    process.env.POLL && !process.env.VERCEL
       ? BotInfo.#stringToBool(process.env.POLL)
       : false;
 }
