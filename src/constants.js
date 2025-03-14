@@ -10,15 +10,16 @@ export class BotInfo {
   static BOT_USERNAME = process.env.BOT_USERNAME;
   static ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID; // Replace with the chat ID you want to forward messages to
   static PORT = process.env.PORT;
-  static WEBHOOK_URL = process.env.WEBHOOK_URL;
+  static WEBHOOK_URL = process.env.WEBHOOK_URL || process.env.VERCEL_URL;
 
   static #stringToBool(str) {
     if (str.toLowerCase() == 'false') return false;
     else return true;
   }
-  static POLL = process.env.POLL
-    ? BotInfo.#stringToBool(process.env.POLL)
-    : false;
+  static POLL =
+    process.env.POLL || !process.env.VERCEL
+      ? BotInfo.#stringToBool(process.env.POLL)
+      : false;
 }
 
 export const bot = new TelegramBot(BotInfo.BOT_TOKEN, {
@@ -31,7 +32,7 @@ export const bot = new TelegramBot(BotInfo.BOT_TOKEN, {
 });
 
 // Enable both a polling and a webhook mode
-if (!BotInfo.POLL) {
+if (!BotInfo.POLL && !process.env.VERCEL) {
   await bot.setWebHook(`${BotInfo.WEBHOOK_URL}/webhook/${BotInfo.BOT_TOKEN}`);
   bot.getWebHookInfo().then(webhookInfo => {
     console.log(

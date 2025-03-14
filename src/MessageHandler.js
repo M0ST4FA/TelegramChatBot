@@ -277,7 +277,7 @@ export default class MessageHandler {
           caption_entities: options.caption_entities,
         })
         .catch(error => {
-          if (error.response.body.parameters.error_code != 429)
+          if (error.response?.body?.parameters?.error_code != 429)
             setTimeout(() => {
               console.log(error.response.body);
               const forwarded = currentChatId !== BotInfo.ADMIN_CHAT_ID;
@@ -304,6 +304,7 @@ export default class MessageHandler {
                 });
               });
             }, 2000 * error.response.body.retry_after);
+          else throw error;
         });
     }
 

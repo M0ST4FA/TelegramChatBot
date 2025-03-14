@@ -314,3 +314,5 @@ bot.on('edited_message_caption', async msg => {
 
   return;
 });
+
+export default bot; // This is for use by the vercel entry point
