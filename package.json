@@ -11,7 +11,8 @@
     "start-nodemon": "nodemon --env-file=test.env ./src/bot.js",
     "debug": "ndb --env-file=test.env ./src/bot.js",
     "install": "",
-    "build": ""
+    "build": "",
+    "vercel-build": "prisma generate"
   },
   "author": "M0sT4fa",
   "license": "AGPL-3.0-only",
