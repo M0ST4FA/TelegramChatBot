@@ -6,3 +6,5 @@ botconfig.json
 migrations
 certificate
 *.ps1
+models
+utils

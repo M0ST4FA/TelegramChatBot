@@ -44,19 +44,16 @@ export default class MessageHandler {
         resolve(result);
       } catch (error) {
         // Enqueue message again in order to try to send it later
-        MessageHandler.#messageQueue.enqueue(message);
 
         // Handle the error
         if (error.response && error.response.statusCode === 429) {
+          MessageHandler.#messageQueue.enqueue(message);
           let retryAfter = error.response.body.parameters.retry_after || 30;
           console.warn(`Rate limit hit! Retrying after ${retryAfter} seconds.`);
 
           // Wait before resuming message sending
           await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
         } else {
-          console.error(
-            `Error sending message:\nMessage: ${error.message}\nStack: ${error.stack}`,
-          );
           reject(error);
         }
       }
@@ -235,6 +232,8 @@ export default class MessageHandler {
       return false;
     }
 
+    if (msg.isSentByMsg) return true;
+
     const currentChatId = msg.chat.id;
 
     const msgInOppositeChat = await sentMessageInOppositeChat;
@@ -277,43 +276,23 @@ export default class MessageHandler {
           caption_entities: options.caption_entities,
         })
         .catch(error => {
-          if (error.response?.body?.parameters?.error_code != 429)
-            setTimeout(() => {
-              console.log(error.response.body);
-              const forwarded = currentChatId !== BotInfo.ADMIN_CHAT_ID;
-              const userMessageId = forwarded
-                ? currentChatMsgId
-                : oppositeChatMsgId;
-              const userChatId = forwarded ? currentChatId : sendToChatId;
-              const adminMessageId = forwarded
-                ? oppositeChatMsgId
-                : currentChatMsgId;
-
-              const message = {
-                userChatId,
-                forwarded,
-                userMessageId,
-                adminMessageId,
-              };
-
-              console.log('Resending message: ', message);
-              messages.deleteMessage(message).then(message => {
-                MessageHandler.#enqueueMessage(sendToChatId, msg, {
-                  ...options,
-                  // reply_to_message_id: oppositeChatMsgId || undefined,
-                });
-              });
-            }, 2000 * error.response.body.retry_after);
-          else throw error;
+          console.warn('Error while editing message caption.');
         });
     }
 
-    if (msg.sticker || msg.poll)
-      if (options.caption)
-        MessageHandler.#enqueueMessage(sendToChatId, options.caption, {
-          ...options,
-          reply_to_message_id: oppositeChatMsgId,
-        });
+    if (msg.sticker || msg.poll); // Sent the info about the sender of the message.
+    // if (options.caption)
+    //   MessageHandler.#enqueueMessage(
+    //     sendToChatId,
+    //     {
+    //       text: 'Message sent by ...',
+    //       isSentByMsg: true,
+    //     },
+    //     {
+    //       ...options,
+    //       reply_to_message_id: oppositeChatMsgId,
+    //     },
+    //   );
 
     return true;
   }

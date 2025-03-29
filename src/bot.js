@@ -33,14 +33,14 @@ bot.on('message', async msg => {
       if (await MessageHandler.sendAdminMessage(msg)) return;
     }
   } catch (err) {
-    console.log(
-      `Message: ${err.message}\nResponse Body: ${err.response?.body}\nStack: ${
-        err.stack
-      }\nMessage Cache: ${JSON.stringify(
+    console.error(
+      `Message: ${err.message}\nResponse Body: ${JSON.stringify(
+        err.response?.body,
+      )}\nStack: ${err.stack}\nMessage Cache: ${JSON.stringify(
         messages.messages(),
       )}\nKey Mapping A2U: ${JSON.stringify(
         messages.keyMappingA2U(),
-      )}\nResponse: ${err.response}`,
+      )}\nResponse: ${JSON.stringify(err.response)}`,
     );
 
     const parsedBody = err.response?.body;
