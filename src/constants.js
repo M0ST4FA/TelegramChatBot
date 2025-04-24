@@ -16,10 +16,7 @@ export class BotInfo {
     if (str.toLowerCase() == 'false') return false;
     else return true;
   }
-  static POLL =
-    process.env.POLL && !process.env.VERCEL
-      ? BotInfo.#stringToBool(process.env.POLL)
-      : false;
+  static POLL = BotInfo.#stringToBool(process.env.POLL);
 }
 
 export const bot = new TelegramBot(BotInfo.BOT_TOKEN, {
@@ -32,8 +29,8 @@ export const bot = new TelegramBot(BotInfo.BOT_TOKEN, {
 });
 
 // Enable both a polling and a webhook mode
-if (!BotInfo.POLL && !process.env.VERCEL) {
-  await bot.setWebHook(`${BotInfo.WEBHOOK_URL}/webhook/${BotInfo.BOT_TOKEN}`);
+if (!BotInfo.POLL) {
+  await bot.setWebHook(`${BotInfo.WEBHOOK_URL}/webhook`);
   bot.getWebHookInfo().then(webhookInfo => {
     console.log(
       `Webhook info:\nURL: ${webhookInfo.url}\nAllowed updates: ${

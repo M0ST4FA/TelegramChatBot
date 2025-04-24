@@ -4,7 +4,8 @@ import express from 'express';
 const app = express();
 app.use(express.json());
 
-app.post(`/api/webhook/${process.env.BOT_TOKEN}`, function (req, res) {
+app.all(`webhook`, function (req, res) {
+  console.log('Testing that the url works.');
   try {
     bot.processUpdate(req.body);
     res.status(200).send();
@@ -22,9 +23,12 @@ app.post(`/api/webhook/${process.env.BOT_TOKEN}`, function (req, res) {
 });
 
 // Endpoint for setting the webhook
-app.post('webhook', async function (req, res) {
+app.post('/set-webhook', async function (req, res) {
+  console.log('Testing that the url works.');
   try {
-    await bot.setWebHook(`${BotInfo.WEBHOOK_URL}/webhook/${BotInfo.BOT_TOKEN}`);
+    await bot.setWebHook(
+      `${BotInfo.WEBHOOK_URL}/api/webhook/${BotInfo.BOT_TOKEN}`,
+    );
     bot.getWebHookInfo().then(webhookInfo => {
       console.log(
         `Webhook info:\nURL: ${webhookInfo.url}\nAllowed updates: ${
